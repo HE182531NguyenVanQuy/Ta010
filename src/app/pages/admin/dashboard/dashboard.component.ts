@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 interface Transaction {
   id: string;
@@ -174,9 +174,24 @@ export class DashboardComponent implements OnInit {
   // Active tab cho revenue chart
   activeRevenueTab: 'weekly' | 'monthly' | 'yearly' = 'monthly';
 
+  private router = inject(Router);
+
   constructor() {}
 
   ngOnInit(): void {}
+
+  goToProfile(): void {
+    console.log('Dashboard goToProfile() invoked');
+    this.router.navigateByUrl('/profile')
+      .then((success) => {
+        if (!success) {
+          console.error('Navigation to /profile failed.');
+        }
+      })
+      .catch((err) => {
+        console.error('Router navigation error to /profile:', err);
+      });
+  }
 
   navigateTo(route: string): void {
     this.activeMenuItem = route;
@@ -186,6 +201,12 @@ export class DashboardComponent implements OnInit {
     
     if (route === 'logout') {
       this.logout();
+    } else if (route === 'profile') {
+      this.router.navigate(['/profile']);
+    } else {
+      // Giả sử các route admin khác nằm trong path 'admin/...'
+      // Nếu không, bạn có thể chỉnh sửa path tùy theo App Routing của bạn
+      this.router.navigate([`/admin/${route}`]);
     }
   }
 

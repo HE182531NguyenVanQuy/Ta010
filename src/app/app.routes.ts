@@ -1,13 +1,46 @@
 import { Routes } from '@angular/router';
+import { OtpFlowGuard } from './guards/otp-flow.guard';
 
 export const routes: Routes = [
+  //auth routes
   {
     path: 'login',
-    loadComponent: () => import('./layout/login/login.component').then((m) => m.LoginComponent),
+    loadComponent: () => import('./pages/auth/login/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'register',
-    loadComponent: () => import('./layout/register/register.component').then((m) => m.RegisterComponent),
+    loadComponent: () => import('./pages/auth/register/register.component').then((m) => m.RegisterComponent),
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./pages/auth/profile/profile.component').then((m) => m.ProfileComponent),
+  },
+
+  // Support legacy /auth/... paths used in some components and guards
+  {
+    path: 'auth',
+    children: [
+      { path: 'login', redirectTo: '/login', pathMatch: 'full' },
+      { path: 'register', redirectTo: '/register', pathMatch: 'full' },
+      { path: 'forgot-password', redirectTo: '/forgot-password', pathMatch: 'full' },
+      { path: 'verify-otp', redirectTo: '/verify-otp', pathMatch: 'full' },
+      { path: 'reset-password', redirectTo: '/reset-password', pathMatch: 'full' },
+    ]
+  },
+
+  { 
+    path: 'forgot-password',
+    loadComponent: () => import('./pages/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) 
+  },
+    
+  { 
+    path: 'verify-otp', 
+    loadComponent: () => import('./pages/auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent), canActivate: [OtpFlowGuard] 
+  },
+
+  { 
+    path: 'reset-password', 
+    loadComponent: () => import('./pages/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent), canActivate: [OtpFlowGuard] 
   },
 
   //admin routes
@@ -34,14 +67,6 @@ export const routes: Routes = [
   {
     path: 'ai-analysis',
     loadComponent: () => import('./features/AI-analysis/ai-analysis.component').then((m) => m.AiAnalysisComponent),
-  },
-  {
-    path: 'ngu-phap',
-    loadComponent: () => import('./pages/customer/grammar/grammar.component').then((m) => m.GrammarComponent),
-  },
-  {
-    path: 'tu-vung',
-    loadComponent: () => import('./pages/customer/vocabulary/vocabulary.component').then((m) => m.VocabularyComponent),
   },
   {
     path: 'tai-lieu',

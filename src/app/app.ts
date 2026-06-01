@@ -45,5 +45,21 @@ export class App {
     { initialValue: this.router.url },
   );
 
-  protected readonly isAdminLayout = computed(() => this.currentUrl().startsWith('/dashboard'));
+  protected readonly isAdminLayout = computed(() => {
+    const url = this.currentUrl();
+    
+    // Danh sách các đường dẫn không sử dụng Header/Footer chung của app
+    const standalonePaths = [
+      '/login', 
+      '/register', 
+      '/forgot-password', 
+      '/verify-otp', 
+      '/reset-password'
+    ];
+
+    // Loại bỏ query parameters trước khi so sánh (ví dụ: /login?msg=... -> /login)
+    const cleanUrl = url.split('?')[0];
+    
+    return url.startsWith('/dashboard') || standalonePaths.includes(cleanUrl);
+  });
 }

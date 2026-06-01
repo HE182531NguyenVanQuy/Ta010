@@ -59,6 +59,9 @@
         <button class="mobile-toggle" (click)="toggleSidebar()">
           <span class="material-symbols-outlined">menu</span>
         </button>
+        <button class="profile-avatar-btn" type="button" (click)="navigateTo('profile')" aria-label="Xem hồ sơ">
+          <img class="profile-avatar-img" [src]="adminAvatar" alt="Avatar người dùng" />
+        </button>
         <div class="breadcrumb">
           <span class="breadcrumb-link" (click)="navigateTo('dashboard')">Admin</span>
           <span class="material-symbols-outlined breadcrumb-separator">chevron_right</span>
@@ -83,7 +86,7 @@
           <span class="material-symbols-outlined">settings</span>
         </button>
         <div class="divider"></div>
-        <div class="user-profile">
+        <div class="user-profile" (click)="navigateTo('profile')" style="cursor: pointer;">
           <div class="user-info">
             <p class="user-name">{{ adminName }}</p>
             <p class="user-role">{{ adminRole }}</p>

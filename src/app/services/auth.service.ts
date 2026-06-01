@@ -4,7 +4,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { RegisterRequest, LoginRequest, TokenResponse, CurrentUser } from '../models/auth.models';
+import { RegisterRequest, LoginRequest, TokenResponse, CurrentUser, ProfileResponse, UpdateProfileRequest, VerifyOtpResponse } from '../models/auth.models';
+
 
 @Injectable({
   providedIn: 'root'
@@ -118,6 +119,38 @@ export class AuthService {
       })
     );
   }
+
+// forgotPassword
+forgotPassword(email: string): Observable<any> {
+  return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+}
+
+resendOtp(email: string): Observable<any> {
+  return this.http.post(`${this.apiUrl}/resend-otp`, { email });
+}
+
+verifyOtp(email: string, otp: string): Observable<VerifyOtpResponse> {
+  return this.http.post<VerifyOtpResponse>(`${this.apiUrl}/verify-otp`, { email, otp });
+}
+
+resetPassword(resetToken: string, newPassword: string): Observable<any> {
+  // backend expects resetToken, newPassword, confirmPassword
+  return this.http.post(`${this.apiUrl}/reset-password`, {
+    resetToken,
+    newPassword,
+    confirmPassword: newPassword
+  });
+}
+
+ // ===== Profile API =====
+ getProfile(): Observable<ProfileResponse> {
+   return this.http.get<ProfileResponse>(`${this.apiUrl}/profile`);
+ }
+
+ updateProfile(payload: UpdateProfileRequest): Observable<ProfileResponse> {
+   return this.http.put<ProfileResponse>(`${this.apiUrl}/profile`, payload);
+ }
+ // ===== end profile =====
 
   getAccessToken(): string | null {
     if (!this.isBrowser) return null;

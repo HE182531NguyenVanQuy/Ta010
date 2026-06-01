@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -129,7 +129,7 @@ export class RegisterComponent {
         const success = !!response && ((response as any).email || (response as any).userId || Object.keys(response).length > 0);
         if (success) {
           // redirect to login with a message
-          this.router.navigate(['/login'], {
+          this.router.navigate(['/auth/login'], {
             queryParams: { message: 'Đăng ký thành công! Mật khẩu tạm thời đã được gửi tới email.' }
           });
         } else {

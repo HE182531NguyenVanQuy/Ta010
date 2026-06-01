@@ -1,0 +1,130 @@
+<div class="independent-profile-wrapper">
+  <!-- Custom Header (Thay thế cho Header chung) -->
+  <header class="profile-header-standalone">
+    <div class="header-container">
+      <button class="btn-back" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Quay lại
+      </button>
+      <div class="brand-logo">TaO10 <span>Hồ sơ</span></div>
+      <div class="header-actions">
+        <span class="status-indicator"></span>
+        Hệ thống trực tuyến
+      </div>
+    </div>
+  </header>
+
+  <main class="profile-main-layout" *ngIf="!loading; else loadingTpl">
+    <div class="profile-grid-container">
+      
+      <!-- Left Sidebar -->
+      <aside class="inner-sidebar">
+        <div class="user-summary-card">
+          <div class="avatar-container">
+            <img [src]="profile?.avatar || 'https://ui-avatars.com/api/?name=' + profile?.fullName" alt="Avatar">
+            <button class="change-photo-btn">
+              <span class="material-symbols-outlined">photo_camera</span>
+            </button>
+          </div>
+          <h3>{{ profile?.fullName }}</h3>
+          <p class="user-email">{{ profile?.email }}</p>
+          <div class="badge-role">{{ profile?.role || 'Học viên' }}</div>
+        </div>
+
+        <nav class="inner-tabs">
+          <button [class.active]="activeTab() === 'general'" (click)="setTab('general')">
+            <span class="material-symbols-outlined">account_circle</span>
+            Thông tin tài khoản
+          </button>
+          <button [class.active]="activeTab() === 'security'" (click)="setTab('security')">
+            <span class="material-symbols-outlined">lock_reset</span>
+            Bảo mật & Mật khẩu
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Right Content -->
+      <section class="profile-form-content">
+        <form [formGroup]="form" (ngSubmit)="submit()" class="modern-form">
+          
+          <!-- Tab: General -->
+          <div class="tab-pane" *ngIf="activeTab() === 'general'">
+            <div class="pane-header">
+              <h2>Thông tin cá nhân</h2>
+              <p>Cập nhật thông tin cơ bản để mọi người nhận ra bạn.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="field-group">
+                <label>Họ và tên</label>
+                <div class="input-box">
+                  <span class="material-symbols-outlined">person</span>
+                  <input formControlName="fullName" type="text" placeholder="Họ và tên của bạn">
+                </div>
+                <small class="err-text" *ngIf="form.get('fullName')?.touched && form.get('fullName')?.invalid">Tên không được để trống</small>
+              </div>
+              
+              <div class="field-group">
+                <label>Số điện thoại</label>
+                <div class="input-box">
+                  <span class="material-symbols-outlined">phone</span>
+                  <input formControlName="phone" type="text" placeholder="09xx xxx xxx">
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label>Địa chỉ hiện tại</label>
+              <div class="input-box">
+                <span class="material-symbols-outlined">location_on</span>
+                <input formControlName="location" type="text" placeholder="Ví dụ: Hà Nội, Việt Nam">
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Security -->
+          <div class="tab-pane" *ngIf="activeTab() === 'security'">
+            <div class="pane-header">
+              <h2>Bảo mật tài khoản</h2>
+              <p>Thay đổi mật khẩu định kỳ để bảo vệ tài khoản của bạn.</p>
+            </div>
+
+            <div class="field-group">
+              <label>Mật khẩu hiện tại</label>
+              <div class="input-box">
+                <span class="material-symbols-outlined">key</span>
+                <input formControlName="currentPassword" type="password" placeholder="••••••••">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label>Mật khẩu mới</label>
+              <div class="input-box">
+                <span class="material-symbols-outlined">lock_open</span>
+                <input formControlName="newPassword" type="password" placeholder="Tối thiểu 6 ký tự">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions-footer">
+            <div class="msg-box">
+              <span class="success-msg" *ngIf="successMessage">{{ successMessage }}</span>
+              <span class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</span>
+            </div>
+            <button type="submit" class="btn-save" [disabled]="loading || form.invalid">
+              <span *ngIf="!loading">Lưu thay đổi</span>
+              <div class="loader-white" *ngIf="loading"></div>
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+</div>
+
+<ng-template #loadingTpl>
+  <div class="full-page-loader">
+    <div class="spinner"></div>
+    <p>Đang tải dữ liệu hồ sơ...</p>
+  </div>
+</ng-template>

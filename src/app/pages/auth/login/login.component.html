@@ -70,7 +70,7 @@
         </div>
         <h1>Đăng nhập</h1>
         <p>Chưa có tài khoản?
-          <a routerLink="/register" class="link-register">Đăng ký miễn phí →</a>
+            <a [routerLink]="['/register']" class="link-register">Đăng ký miễn phí →</a>
         </p>
       </div>
 
@@ -159,7 +159,7 @@
             <span class="checkbox-box"></span>
             <span class="checkbox-lbl">Ghi nhớ đăng nhập</span>
           </label>
-          <a routerLink="/forgot-password" class="forgot-link">Quên mật khẩu?</a>
+          <button type="button" (click)="goToForgotPassword()" class="forgot-link">Quên mật khẩu?</button>
         </div>
 
         <!-- Error message -->

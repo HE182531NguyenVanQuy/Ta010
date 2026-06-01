@@ -1,0 +1,51 @@
+<div class="auth-fullscreen-container">
+  <div class="auth-card fade-in">
+    <div class="auth-header">
+      <div class="icon-circle">
+        <span class="material-symbols-outlined">verified_user</span>
+      </div>
+      <h1>Xác thực mã OTP</h1>
+      <p>Mã xác thực đã được gửi đến email:<br><strong>{{ email }}</strong></p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <div class="form-group otp-group">
+        <label>Nhập 6 chữ số</label>
+        <input 
+          class="otp-input"
+          formControlName="otp" 
+          maxlength="6" 
+          placeholder="0 0 0 0 0 0"
+          autocomplete="one-time-code"
+          autofocus
+        />
+        <div class="error-msg" *ngIf="form.controls['otp'].touched && form.controls['otp'].invalid">
+          Mã OTP phải bao gồm 6 chữ số.
+        </div>
+      </div>
+
+      <div class="timer-zone">
+        <div class="countdown" *ngIf="remaining > 0">
+          Mã hết hạn sau: <span>{{ remaining | number:'2.0-0' }} giây</span>
+        </div>
+        <div class="expired-msg" *ngIf="remaining === 0">
+          Mã đã hết hạn. 
+          <button type="button" class="btn-text-link" (click)="resend()">Gửi lại mã</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-auth-primary" [disabled]="loading || form.invalid || remaining === 0">
+        <span *ngIf="!loading">Xác nhận</span>
+        <div class="spinner-white" *ngIf="loading"></div>
+      </button>
+
+      <div class="server-error" *ngIf="error || resendError">{{ error || resendError }}</div>
+    </form>
+
+    <div class="auth-footer">
+      <button class="btn-back-flat" (click)="router.navigate(['/forgot-password'])">
+        Thay đổi email
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,14 +1,14 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { LoginRequest, CurrentUser } from '../../models/auth.models';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../services/auth.service';
+import { LoginRequest, CurrentUser } from '../../../models/auth.models';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,7 +106,7 @@ export class LoginComponent {
       if (role === 'admin') {
         await this.router.navigate(['/dashboard']);
       } else {
-        await this.router.navigate(['/home']);
+        await this.router.navigate(['/']);
       }
 
     } catch (err: unknown) {
@@ -131,5 +131,18 @@ export class LoginComponent {
 
   loginWithFacebook(): void {
     console.log('Facebook login');
+  }
+
+  goToForgotPassword(): void {
+    console.log('Navigating to /forgot-password');
+    this.router.navigateByUrl('/forgot-password')
+      .then((success) => {
+        if (!success) {
+          console.error('Navigation to /forgot-password failed.');
+        }
+      })
+      .catch((err) => {
+        console.error('Router navigation error to /forgot-password:', err);
+      });
   }
 }
