@@ -28,7 +28,7 @@ export class ResetPasswordComponent implements OnInit {
 
   ngOnInit() {
     if (!this.state.resetToken) {
-      this.router.navigate(['/auth/forgot-password']);
+      this.router.navigate(['/forgot-password']);
     }
   }
 
