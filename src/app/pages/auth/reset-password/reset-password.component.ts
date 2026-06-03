@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
 import { PasswordResetStateService } from '../../../services/password-reset-state.service';
 
 @Component({
@@ -16,10 +17,11 @@ export class ResetPasswordComponent implements OnInit {
   private fb = inject(FormBuilder);
   private state = inject(PasswordResetStateService);
   private auth = inject(AuthService);
+  private notification = inject(NotificationService);
   private router = inject(Router);
 
   form = this.fb.group({
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    newPassword: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+/)]],
     confirmPassword: ['', [Validators.required]]
   }, { validators: this.match('newPassword','confirmPassword') });
 
@@ -48,9 +50,10 @@ export class ResetPasswordComponent implements OnInit {
     this.loading = true;
     this.auth.resetPassword(token, newPassword).subscribe({
       next: () => {
+        this.loading = false;
         this.state.clear();
-        // Điều hướng về login và chặn quay lại trang reset bằng replaceUrl
-        this.router.navigate(['/auth/login'], { replaceUrl: true });
+        this.notification.show('Mật khẩu đã được cập nhật thành công. Vui lòng đăng nhập bằng mật khẩu mới.', 'success');
+        this.router.navigate(['/login'], { replaceUrl: true });
       },
       error: (err: any) => {
         this.error = err?.error?.message ?? 'Không thể đổi mật khẩu';

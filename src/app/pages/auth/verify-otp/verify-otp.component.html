@@ -1,51 +1,64 @@
-<div class="auth-fullscreen-container">
-  <div class="auth-card fade-in">
-    <div class="auth-header">
-      <div class="icon-circle">
-        <span class="material-symbols-outlined">verified_user</span>
-      </div>
-      <h1>Xác thực mã OTP</h1>
-      <p>Mã xác thực đã được gửi đến email:<br><strong>{{ email }}</strong></p>
-    </div>
-
-    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
-      <div class="form-group otp-group">
-        <label>Nhập 6 chữ số</label>
-        <input 
-          class="otp-input"
-          formControlName="otp" 
-          maxlength="6" 
-          placeholder="0 0 0 0 0 0"
-          autocomplete="one-time-code"
-          autofocus
-        />
-        <div class="error-msg" *ngIf="form.controls['otp'].touched && form.controls['otp'].invalid">
-          Mã OTP phải bao gồm 6 chữ số.
+﻿<div class="auth-hero">
+  <div class="auth-hero-blob1"></div>
+  <div class="auth-hero-blob2"></div>
+  <div class="auth-hero-inner">
+    <div class="auth-card fade-up">
+      <div class="auth-header">
+        <div class="auth-badge">
+          <div class="auth-badge-dot"></div>
+          Xác thực an toàn
         </div>
+        <h1>Nhập mã OTP</h1>
+        <p>Mã xác thực đã được gửi đến<br><strong>{{ email }}</strong></p>
       </div>
 
-      <div class="timer-zone">
-        <div class="countdown" *ngIf="remaining > 0">
-          Mã hết hạn sau: <span>{{ remaining | number:'2.0-0' }} giây</span>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+        <div class="form-group" [class.has-error]="form.controls['otp'].touched && form.controls['otp'].invalid">
+          <label>Mã 6 chữ số</label>
+          <div class="input-wrapper otp-wrapper">
+            <span class="material-symbols-outlined">lock</span>
+            <input
+              class="otp-input"
+              formControlName="otp"
+              maxlength="6"
+              placeholder="000000"
+              autocomplete="one-time-code"
+              autofocus
+            />
+          </div>
+          <div class="error-msg" *ngIf="form.controls['otp'].touched && form.controls['otp'].invalid">
+            Mã OTP phải gồm 6 chữ số.
+          </div>
         </div>
-        <div class="expired-msg" *ngIf="remaining === 0">
-          Mã đã hết hạn. 
-          <button type="button" class="btn-text-link" (click)="resend()">Gửi lại mã</button>
+
+        <div class="timer-box" [class.expired]="remaining === 0">
+          <div *ngIf="remaining > 0" class="countdown">
+            <span class="timer-icon">⏱️</span>
+            <div class="timer-text">
+              <div>Mã hết hạn sau</div>
+              <div class="timer-value">{{ remaining }}s</div>
+            </div>
+          </div>
+          <div *ngIf="remaining === 0" class="expired-msg">
+            <span class="expire-icon">⏰</span>
+            Mã đã hết hạn
+          </div>
         </div>
+
+        <button type="submit" class="btn-auth-primary" [disabled]="loading || form.invalid || remaining === 0">
+          <span *ngIf="!loading">Xác nhận</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+
+        <div class="server-error" *ngIf="error || resendError">{{ error || resendError }}</div>
+      </form>
+
+      <div class="auth-footer">
+        <span *ngIf="remaining === 0">Chưa nhận được mã?</span>
+        <button *ngIf="remaining === 0" type="button" class="btn-resend" (click)="resend()">Gửi lại</button>
+        <span *ngIf="remaining > 0">Muốn thay đổi email?</span>
+        <button *ngIf="remaining > 0" type="button" class="link-primary" (click)="router.navigate(['/forgot-password'])">Quay lại</button>
       </div>
-
-      <button type="submit" class="btn-auth-primary" [disabled]="loading || form.invalid || remaining === 0">
-        <span *ngIf="!loading">Xác nhận</span>
-        <div class="spinner-white" *ngIf="loading"></div>
-      </button>
-
-      <div class="server-error" *ngIf="error || resendError">{{ error || resendError }}</div>
-    </form>
-
-    <div class="auth-footer">
-      <button class="btn-back-flat" (click)="router.navigate(['/forgot-password'])">
-        Thay đổi email
-      </button>
     </div>
   </div>
 </div>

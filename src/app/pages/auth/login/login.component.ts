@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef} from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
 import { LoginRequest, CurrentUser } from '../../../models/auth.models';
 
 @Component({
@@ -31,7 +32,8 @@ export class LoginComponent {
   constructor(
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private authService: AuthService
+    private authService: AuthService,
+    private notificationService: NotificationService,
   ) {}
 
   validateEmail(): void {
@@ -91,6 +93,7 @@ export class LoginComponent {
 
       // call AuthService which stores tokens and decodes user
       await this.authService.loginAsync(payload);
+      this.notificationService.show('Đăng nhập thành công. Chào mừng bạn đến TaO10!', 'success');
 
       // optionally preserve remembered email
       if (this.rememberMe) {

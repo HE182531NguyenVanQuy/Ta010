@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-register',
@@ -37,6 +38,7 @@ export class RegisterComponent {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private authService: AuthService,
+    private notificationService: NotificationService,
   ) {}
 
   // validations
@@ -128,10 +130,8 @@ export class RegisterComponent {
         // treat any non-error response as success — backend returns created object or 201
         const success = !!response && ((response as any).email || (response as any).userId || Object.keys(response).length > 0);
         if (success) {
-          // redirect to login with a message
-          this.router.navigate(['/auth/login'], {
-            queryParams: { message: 'Đăng ký thành công! Mật khẩu tạm thời đã được gửi tới email.' }
-          });
+          this.notificationService.show('Đăng ký thành công! Mật khẩu tạm thời đã được gửi tới email.', 'success');
+          this.router.navigate(['/login']);
         } else {
           // unexpected shape
           this.registerError = 'Đăng ký thất bại. Vui lòng thử lại.';

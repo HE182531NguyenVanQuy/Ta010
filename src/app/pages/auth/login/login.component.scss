@@ -246,6 +246,7 @@ $gray-500: #666;
 }
 
 .form-card {
+  position: relative;
   width: 100%;
   max-width: 440px;
   animation: fadeUp .55s ease .1s both;
@@ -550,6 +551,110 @@ $gray-500: #666;
 }
 
 .alert-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+
+.toast-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(8px);
+  animation: fadeInUp .35s ease;
+}
+
+.toast-popup::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.06));
+  pointer-events: none;
+}
+
+.toast-popup > * {
+  position: relative;
+}
+
+.toast-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(420px, calc(100vw - 48px));
+  padding: 22px 24px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 28px;
+  box-shadow: 0 34px 90px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(12px);
+  transition: transform .28s ease, opacity .28s ease;
+}
+
+.toast-card.fade-out {
+  opacity: 0;
+  transform: translateY(-14px);
+}
+
+.toast-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.toast-close:hover {
+  background: rgba(15, 23, 42, 0.16);
+  transform: scale(1.05);
+}
+
+.toast-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #0ea5e9;
+  color: #fff;
+  font-size: 1.15rem;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+}
+
+.toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toast-title {
+  font-family: var(--font-head);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.toast-text {
+  font-family: var(--font-body);
+  font-size: 0.87rem;
+  color: #334155;
+  line-height: 1.4;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 // Submit button
 .btn-submit {
