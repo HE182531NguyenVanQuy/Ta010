@@ -151,7 +151,7 @@
               <div class="diff-dot"></div>
               {{ exam.difficulty }}
             </div>
-            <button type="button" class="btn-start">{{ exam.action }}</button>
+            <button type="button" class="btn-start" [routerLink]="['/test']" [queryParams]="{ examId: exam.id }">{{ exam.action }}</button>
           </div>
         </div>
       </div>
@@ -204,8 +204,8 @@
   </div>
   <div class="two-cols fade-up">
     <div class="blog-grid">
-      @for (blog of blogItems; track blog.title) {
-        <a class="blog-card" href="#">
+      @for (blog of blogItems; track blog.id) {
+        <a class="blog-card" [routerLink]="['/blog', blog.id]">
           <div class="blog-thumb" [ngClass]="blog.thumbClass">{{ blog.emoji }}</div>
           <div>
             <div class="blog-title">{{ blog.title }}</div>

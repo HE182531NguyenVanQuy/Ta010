@@ -35,8 +35,13 @@
       <a routerLink="/dien-dan" routerLinkActive="active">Diễn đàn</a>
     </nav>
     <div class="header-actions">
-      <button type="button" class="btn-login" routerLink="/login">Đăng nhập</button>
-      <a routerLink="/register" class="btn-register">🚀 Đăng ký miễn phí</a>
+      @if (currentUser$ | async; as user) {
+        <a routerLink="/profile" class="btn-register btn-profile" style="background-color: #f1f5f9; color: #0f172a;">👤 {{ user.email?.split('@')?.[0] || 'Tài khoản' }}</a>
+        <button type="button" class="btn-login" (click)="logout()">Đăng xuất</button>
+      } @else {
+        <button type="button" class="btn-login" routerLink="/login">Đăng nhập</button>
+        <a routerLink="/register" class="btn-register">🚀 Đăng ký miễn phí</a>
+      }
       <div class="hamburger" role="button" tabindex="0" aria-label="Menu">☰</div>
     </div>
   </div>
@@ -56,8 +61,6 @@
     <select class="search-filter" aria-label="Lọc tìm kiếm">
       <option>Tất cả</option>
       <option>Đề thi</option>
-      <option>Ngữ pháp</option>
-      <option>Từ vựng</option>
       <option>Tài liệu</option>
     </select>
     <button type="button" class="btn-search">Tìm kiếm</button>

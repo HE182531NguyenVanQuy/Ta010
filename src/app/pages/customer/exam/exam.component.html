@@ -17,15 +17,53 @@
       Bộ sưu tập đề thi tuyển sinh vào lớp 10 đầy đủ nhất – chuẩn cấu trúc 2026 – kèm đáp án giải thích chi tiết từng câu.
     </p>
     <div class="hero-stats-row">
-      <div><div class="hs-num">300+</div><div class="hs-label">Đề thi có sẵn</div></div>
-      <div><div class="hs-num">100%</div><div class="hs-label">Có đáp án</div></div>
-      <div><div class="hs-num">2023–2026</div><div class="hs-label">Năm học</div></div>
-      <div><div class="hs-num">600k+</div><div class="hs-label">Lượt làm bài</div></div>
+      <div><div class="hs-num">4</div><div class="hs-label">Đề thi cấu trúc</div></div>
+      <div><div class="hs-num">100%</div><div class="hs-label">Có giải thích</div></div>
+      <div><div class="hs-num">2026</div><div class="hs-label">Năm học</div></div>
+      <div><div class="hs-num">34k+</div><div class="hs-label">Lượt thi thử</div></div>
     </div>
   </div>
 </section>
 
 <div class="page-main">
+   <!-- CASE 1: USER DOES NOT HAVE ACTIVE SUBSCRIPTION PACKAGE -->
+  <div class="pricing-container fade-up" *ngIf="!hasActivePackage">
+    <div class="pricing-header">
+      <div class="pricing-badge">✨ NÂNG CẤP TÀI KHOẢN</div>
+      <h2>Mở Khóa Kho Đề Thi Luyện Thi Lớp 10</h2>
+      <p>Chọn gói phù hợp để truy cập ngay ngân hàng đề thi chuẩn cấu trúc năm 2026, chấm điểm tự động và đáp án giải thích chi tiết.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-card" *ngFor="let pkg of packages" [class.featured]="pkg.name === 'Pro'">
+        <div class="pricing-card-badge" *ngIf="pkg.name === 'Pro'">🔥 BÁN CHẠY NHẤT</div>
+        <div class="pricing-card-header">
+          <h3 class="package-name">{{ pkg.name }}</h3>
+          <p class="package-desc">{{ pkg.description }}</p>
+          <div class="package-price">
+            <span class="price-val">{{ pkg.name === 'Basic' ? '199.000' : pkg.name === 'Pro' ? '299.000' : '399.000' }}đ</span>
+            <span class="price-duration">/ 30 ngày</span>
+          </div>
+        </div>
+        
+        <div class="pricing-card-body">
+          <ul class="package-features">
+            <li *ngFor="let item of $any(pkg).items">
+              <span class="check-icon">✓</span> {{ item }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="pricing-card-footer">
+          <button type="button" class="btn-subscribe" (click)="onBuyPackage(pkg)" [disabled]="isProcessingPayment">
+            {{ isProcessingPayment && selectedPackage?.packageId === pkg.packageId ? 'Đang khởi tạo...' : 'Đăng ký ngay 🚀' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASE 2: SHOW EXAMS ALWAYS -->
   <div class="two-col-layout">
     <aside class="sidebar">
       <div class="sidebar-panel fade-up">
@@ -85,43 +123,15 @@
     </aside>
 
     <div class="exam-content">
-      <div class="stats-banner fade-up">
-        <div class="stat-item"><div class="stat-icon">📝</div><div class="stat-num">300<span>+</span></div><div class="stat-label">Tổng đề thi</div></div>
-        <div class="stat-item"><div class="stat-icon">✅</div><div class="stat-num">100<span>%</span></div><div class="stat-label">Có đáp án chi tiết</div></div>
-        <div class="stat-item"><div class="stat-icon">🔓</div><div class="stat-num">90<span>+</span></div><div class="stat-label">Đề miễn phí</div></div>
-        <div class="stat-item"><div class="stat-icon">👥</div><div class="stat-num">600<span>k+</span></div><div class="stat-label">Lượt làm bài</div></div>
-      </div>
-
-      <div class="exam-notice-bar fade-up">
-        <span class="exam-notice-emoji">🔥</span>
-        <div class="exam-notice-text">
-          <div class="exam-notice-title">Bộ đề thi thử tổng hợp năm 2026 vừa cập nhật!</div>
-          <div class="exam-notice-desc">Chuẩn cấu trúc thi tuyển sinh vào lớp 10 – Có đáp án giải thích từng câu</div>
-        </div>
-        <button type="button" class="exam-notice-btn">Xem ngay →</button>
-      </div>
-
-      <div class="tab-bar fade-up">
-        @for (t of tabs; track t.id) {
-          <button
-            type="button"
-            class="tab"
-            [class.active]="activeTab === t.id"
-            (click)="setTab(t.id)"
-          >
-            {{ t.label }}
-          </button>
-        }
+      <div class="active-pkg-banner fade-up" *ngIf="hasActivePackage">
+        <span>⭐ Bạn đang sử dụng gói: <strong>{{ activeUserPkg?.packageName }}</strong> (Còn hạn đến {{ activeUserPkg?.endDate | date: 'dd/MM/yyyy' }})</span>
       </div>
 
       <div class="toolbar fade-up">
-        <div class="result-count">Hiển thị <span>300+</span> đề thi</div>
+        <div class="result-count">Đã mở khóa <span>{{ exams.length }}</span> đề thi cho tài khoản của bạn</div>
         <div class="toolbar-right">
           <select class="sort-select" aria-label="Sắp xếp">
             <option>Mới nhất</option>
-            <option>Nhiều lượt làm nhất</option>
-            <option>Khó nhất</option>
-            <option>Dễ nhất</option>
           </select>
           <div class="view-toggle">
             <button type="button" class="view-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')" title="Dạng lưới">⊞</button>
@@ -130,112 +140,43 @@
         </div>
       </div>
 
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">🔥 Đề thi thử tổng hợp <span>năm 2026</span></h2>
-        <a routerLink="/de-thi" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="exam-cards fade-up">
-        @for (exam of examCardsMain; track exam.id) {
-          <div class="exam-card">
-            <div class="exam-card-cover" [ngClass]="exam.cover">
-              <div class="cover-pattern"></div>
-              <div class="cover-label">2026</div>
-              <span class="exam-card-tag" [ngClass]="exam.tagClass">{{ exam.tag }}</span>
+      <div class="exam-cards fade-up" [class.list-view]="viewMode === 'list'">
+        <div class="exam-card" *ngFor="let exam of exams">
+          <div class="exam-card-cover" [ngClass]="getRandomCoverClass(exam.examId)">
+            <div class="cover-pattern"></div>
+            <div class="cover-label">2026</div>
+            <span class="exam-card-tag tag-pro">★ Đã Mở Khóa</span>
+          </div>
+          <div class="exam-card-body">
+            <div class="exam-card-title">{{ exam.title }}</div>
+            <div class="exam-card-meta">
+              <span>📝 {{ exam.questionsCount }} câu</span>
+              <span>⏱ {{ exam.durationTime }} phút</span>
+              <span>👁 {{ exam.viewsCount }} lượt xem</span>
             </div>
-            <div class="exam-card-body">
-              <div class="exam-card-title">{{ exam.title }}</div>
-              <div class="exam-card-meta">
-                <span>📝 {{ exam.questions }} câu</span>
-                <span>⏱ {{ exam.duration }} phút</span>
-                <span>👁 {{ exam.views }}</span>
+            <div class="exam-card-progress">
+              <div class="progress-info"><span>Tiến độ</span><span>{{ exam.progressPercentage }}%</span></div>
+              <div class="progress-bar"><div class="progress-fill" [style.width.%]="exam.progressPercentage"></div></div>
+            </div>
+            <div class="exam-card-footer">
+              <div class="exam-card-difficulty" [ngClass]="getDifficultyClass(exam.level ?? '')">
+                <div class="diff-dot"></div>
+                {{ exam.level }}
               </div>
-              <div class="exam-card-progress">
-                <div class="progress-info"><span>Tiến độ</span><span>{{ exam.progress }}%</span></div>
-                <div class="progress-bar"><div class="progress-fill" [style.width.%]="exam.progress"></div></div>
-              </div>
-              <div class="exam-card-footer">
-                <div class="exam-card-difficulty" [ngClass]="exam.difficultyClass">
-                  <div class="diff-dot"></div>
-                  {{ exam.difficulty }}
-                </div>
-                <button type="button" class="btn-start">{{ exam.action }}</button>
-              </div>
+              <button type="button" class="btn-start" (click)="onStartExam(exam)">
+                {{ exam.progressPercentage === 100 ? 'Làm lại ↺' : exam.progressPercentage ? 'Tiếp tục →' : (hasActivePackage ? 'Làm bài →' : '🔒 Khóa') }}
+              </button>
             </div>
           </div>
-        }
-      </div>
-
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">📚 Đề thi theo <span>chuyên đề</span></h2>
-        <a href="#" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="exam-cards fade-up d1">
-        @for (exam of examCardsChuyenDe; track exam.title) {
-          <div class="exam-card">
-            <div class="exam-card-cover" [ngClass]="exam.cover">
-              <div class="cover-pattern"></div>
-              <div class="cover-label">{{ exam.coverLabel }}</div>
-              <span class="exam-card-tag" [ngClass]="exam.tagClass">{{ exam.tag }}</span>
-            </div>
-            <div class="exam-card-body">
-              <div class="exam-card-title">{{ exam.title }}</div>
-              <div class="exam-card-meta">
-                <span>📝 {{ exam.questions }} câu</span>
-                <span>⏱ {{ exam.duration }} phút</span>
-                <span>👁 {{ exam.views }}</span>
-              </div>
-              <div class="exam-card-progress">
-                <div class="progress-info"><span>Tiến độ</span><span>{{ exam.progress }}%</span></div>
-                <div class="progress-bar"><div class="progress-fill" [style.width.%]="exam.progress"></div></div>
-              </div>
-              <div class="exam-card-footer">
-                <div class="exam-card-difficulty" [ngClass]="exam.difficultyClass">
-                  <div class="diff-dot"></div>
-                  {{ exam.difficulty }}
-                </div>
-                <button type="button" class="btn-start">{{ exam.action }}</button>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">🎯 Luyện theo <span>chủ điểm ngữ pháp</span></h2>
-        <a routerLink="/ngu-phap" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="topics-grid fade-up d1">
-        @for (topic of topics; track topic.name) {
-          <div class="topic-card">
-            <div class="topic-emoji">{{ topic.emoji }}</div>
-            <div>
-              <div class="topic-name">{{ topic.name }}</div>
-              <div class="topic-count">{{ topic.count }}</div>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="pagination fade-up">
-        <button type="button" class="pg-btn" (click)="setPage(currentPage - 1)" [disabled]="currentPage <= 1">‹</button>
-        @for (p of pages; track p) {
-          <button type="button" class="pg-btn" [class.active]="currentPage === p" (click)="setPage(p)">{{ p }}</button>
-        }
-        <span class="pg-ellipsis">...</span>
-        <button type="button" class="pg-btn" [class.active]="currentPage === lastPage" (click)="setPage(lastPage)">{{ lastPage }}</button>
-        <button type="button" class="pg-btn" (click)="setPage(currentPage + 1)" [disabled]="currentPage >= lastPage">›</button>
-      </div>
-
-      <div class="cta-section fade-up">
-        <div class="cta-emoji">🎓</div>
-        <h2>Bắt đầu ôn luyện <span>hoàn toàn miễn phí!</span></h2>
-        <p>Đăng ký ngay để truy cập 300+ đề thi và đáp án chi tiết. Không cần thẻ tín dụng.</p>
-        <div class="cta-btns">
-          <button type="button" class="btn-cta-primary">🚀 Tạo tài khoản miễn phí</button>
-          <button type="button" class="btn-cta-outline">📖 Xem đề thi ngay</button>
         </div>
-        <div class="cta-note">✅ Miễn phí mãi mãi &nbsp;·&nbsp; ✅ Không quảng cáo &nbsp;·&nbsp; ✅ 300+ đề thi</div>
+      </div>
+
+      <div class="pagination fade-up" *ngIf="exams.length > 10">
+        <button type="button" class="pg-btn" [disabled]="true">‹</button>
+        <button type="button" class="pg-btn active">1</button>
+        <button type="button" class="pg-btn" [disabled]="true">›</button>
       </div>
     </div>
   </div>
 </div>
+

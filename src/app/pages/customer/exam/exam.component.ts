@@ -1,15 +1,36 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { NgClass, CommonModule } from '@angular/common';
+import { ExamService, ExamResponse } from '../../../services/exam.service';
+import { PaymentService, PackageResponse, UserPackageResponse, CheckoutResponse } from '../../../services/payment.service';
+import { NotificationService } from '../../../services/notification.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-exam',
   standalone: true,
-  imports: [RouterLink, NgClass],
+  imports: [RouterLink, NgClass, CommonModule],
   templateUrl: './exam.component.html',
   styleUrl: './exam.component.scss',
 })
-export class ExamComponent {
+export class ExamComponent implements OnInit {
+  private examService = inject(ExamService);
+  private paymentService = inject(PaymentService);
+  private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  // States
+  hasActivePackage = false;
+  activeUserPkg: UserPackageResponse | null = null;
+  exams: ExamResponse[] = [];
+  packages: PackageResponse[] = [];
+
+  // Payment States
+  selectedPackage: PackageResponse | null = null;
+  isProcessingPayment = false;
+
+  // Tabs & filters
   activeTab = 'all';
   activeYear = 'all';
   activeDifficulty = 'all';
@@ -21,61 +42,194 @@ export class ExamComponent {
     { id: 'all', label: 'Tất cả' },
     { id: 'thu', label: 'Đề thi thử' },
     { id: 'chinh-thuc', label: 'Đề chính thức' },
-    { id: 'chuyen-de', label: 'Theo chuyên đề' },
-    { id: 'nhanh', label: 'Kiểm tra nhanh' },
   ];
 
   yearChips = [
     { id: 'all', label: 'Tất cả' },
     { id: '2026', label: '2026' },
-    { id: '2025', label: '2025' },
-    { id: '2024', label: '2024' },
-    { id: '2023', label: '2023' },
   ];
 
   typeFilters = [
-    { id: 'all', label: '🗂️ Tất cả', count: '300+' },
-    { id: 'thu', label: '📝 Đề thi thử tổng hợp', count: '120' },
-    { id: 'chinh-thuc', label: '✅ Đề chính thức', count: '86' },
-    { id: 'chuyen-de', label: '🎯 Đề theo chuyên đề', count: '64' },
-    { id: 'nhanh', label: '⚡ Kiểm tra nhanh', count: '30' },
+    { id: 'all', label: '🗂️ Tất cả', count: '4' },
+    { id: 'thu', label: '📝 Đề thi thử tổng hợp', count: '4' },
   ];
 
   difficultyFilters = [
-    { id: 'all', label: 'Tất cả', count: '300+' },
-    { id: 'easy', label: '🟢 Dễ', count: '90' },
-    { id: 'medium', label: '🟡 Trung bình', count: '140' },
-    { id: 'hard', label: '🔴 Khó', count: '70' },
+    { id: 'all', label: 'Tất cả', count: '4' },
+    { id: 'easy', label: '🟢 Dễ', count: '1' },
+    { id: 'medium', label: '🟡 Trung bình', count: '1' },
+    { id: 'hard', label: '🔴 Khó', count: '2' },
   ];
 
-  examCardsMain = [
-    { id: 1, title: 'Đề thi thử tổng hợp vào lớp 10 – Bộ đề số 1 năm 2026', questions: 40, duration: 60, views: '42.8k lượt', progress: 0, difficulty: 'Khó', difficultyClass: 'diff-hard', action: 'Làm bài →', cover: 'cover-blue', tag: '🔥 Hot', tagClass: 'tag-hot' },
-    { id: 2, title: 'Đề thi thử tổng hợp vào lớp 10 – Bộ đề số 2 năm 2026', questions: 40, duration: 60, views: '36.1k lượt', progress: 60, difficulty: 'Khó', difficultyClass: 'diff-hard', action: 'Tiếp tục →', cover: 'cover-sky', tag: '✨ Mới', tagClass: 'tag-new' },
-    { id: 3, title: 'Đề thi thử tổng hợp vào lớp 10 – Bộ đề số 3 năm 2026', questions: 40, duration: 60, views: '29.4k lượt', progress: 100, difficulty: 'Trung bình', difficultyClass: 'diff-medium', action: 'Xem KQ →', cover: 'cover-teal', tag: 'Miễn phí', tagClass: 'tag-free' },
-    { id: 4, title: 'Đề thi thử tổng hợp vào lớp 10 – Bộ đề số 4 năm 2026', questions: 40, duration: 60, views: '24.7k lượt', progress: 0, difficulty: 'Trung bình', difficultyClass: 'diff-medium', action: 'Làm bài →', cover: 'cover-indigo', tag: '🔥 Hot', tagClass: 'tag-hot' },
-    { id: 5, title: 'Đề thi thử tổng hợp vào lớp 10 – Bộ đề số 5 năm 2026', questions: 40, duration: 60, views: '19.3k lượt', progress: 35, difficulty: 'Dễ', difficultyClass: 'diff-easy', action: 'Tiếp tục →', cover: 'cover-emerald', tag: '✨ Mới', tagClass: 'tag-new' },
-    { id: 6, title: 'Đề thi thử tổng hợp vào lớp 10 – Bộ đề số 6 năm 2026', questions: 40, duration: 60, views: '15.6k lượt', progress: 0, difficulty: 'Dễ', difficultyClass: 'diff-easy', action: 'Làm bài →', cover: 'cover-violet', tag: 'Miễn phí', tagClass: 'tag-free' },
-  ];
+  pages = [1];
+  lastPage = 1;
 
-  examCardsChuyenDe = [
-    { title: 'Chuyên đề Ngữ pháp – 100 câu trắc nghiệm tổng hợp thì động từ', questions: 100, duration: 45, views: '18.2k lượt', progress: 80, difficulty: 'Trung bình', difficultyClass: 'diff-medium', action: 'Tiếp tục →', cover: 'cover-rose', coverLabel: 'NGP', tag: '🔥 Hot', tagClass: 'tag-hot' },
-    { title: 'Chuyên đề Đọc hiểu – 50 bài đọc chuẩn cấu trúc thi 2026', questions: 50, duration: 60, views: '11.4k lượt', progress: 0, difficulty: 'Khó', difficultyClass: 'diff-hard', action: 'Làm bài →', cover: 'cover-amber', coverLabel: 'ĐH', tag: 'Miễn phí', tagClass: 'tag-free' },
-    { title: 'Chuyên đề Từ vựng – Điền từ, từ đồng nghĩa / trái nghĩa', questions: 80, duration: 40, views: '9.7k lượt', progress: 50, difficulty: 'Dễ', difficultyClass: 'diff-easy', action: 'Tiếp tục →', cover: 'cover-cyan', coverLabel: 'TV', tag: '✨ Mới', tagClass: 'tag-new' },
-  ];
+  ngOnInit(): void {
+    this.checkSubscription();
+  }
 
-  topics = [
-    { name: 'Thì động từ', count: '12 chủ điểm · 240 bài', emoji: '⏰' },
-    { name: 'Câu bị động', count: '8 chủ điểm · 160 bài', emoji: '🔄' },
-    { name: 'Câu gián tiếp', count: '6 chủ điểm · 120 bài', emoji: '💬' },
-    { name: 'Câu điều kiện', count: '4 chủ điểm · 80 bài', emoji: '❓' },
-    { name: 'Mệnh đề quan hệ', count: '5 chủ điểm · 100 bài', emoji: '📖' },
-    { name: 'Liên từ & Giới từ', count: '9 chủ điểm · 180 bài', emoji: '🔗' },
-    { name: 'Từ loại & Cấu tạo từ', count: '10 chủ điểm · 200 bài', emoji: '📝' },
-    { name: 'Kỹ năng đọc hiểu', count: '15 chủ điểm · 300 bài', emoji: '🗣️' },
-  ];
+  checkSubscription(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.hasActivePackage = false;
+      this.loadAllPackages();
+      this.loadAllExamsFallback();
+      return;
+    }
 
-  pages = [1, 2, 3, 4, 5];
-  lastPage = 12;
+    this.paymentService.getMyPackage().subscribe({
+      next: (res) => {
+        this.activeUserPkg = res;
+        this.hasActivePackage = res.isActive;
+
+        if (res.isActive) {
+          this.loadExams();
+        } else {
+          this.loadAllPackages();
+          this.loadAllExamsFallback();
+        }
+      },
+      error: () => {
+        this.hasActivePackage = false;
+        this.loadAllPackages();
+        this.loadAllExamsFallback();
+      }
+    });
+  }
+
+  loadExams(): void {
+    if (!this.activeUserPkg?.packageId) return;
+    
+    const diffMap: { [key: string]: string } = {
+      'Dễ': 'easy',
+      'Trung bình': 'medium',
+      'Khó': 'hard'
+    };
+
+    this.paymentService.getPackageExams(this.activeUserPkg.packageId).subscribe({
+      next: (res) => {
+        const data = res.exams || [];
+        this.exams = data;
+        this.updateExamFiltersCount(data);
+      },
+      error: (err) => {
+        console.error('Failed to load exams', err);
+      }
+    });
+  }
+
+  loadAllExamsFallback(): void {
+    this.examService.getExams().subscribe({
+      next: (data) => {
+        this.exams = data;
+        this.updateExamFiltersCount(data);
+      },
+      error: (err) => console.error('Failed to load exams fallback', err)
+    });
+  }
+
+  updateExamFiltersCount(data: any[]): void {
+    const diffMap: { [key: string]: string } = {
+      'Dễ': 'easy',
+      'Trung bình': 'medium',
+      'Khó': 'hard'
+    };
+    this.typeFilters[0].count = data.length.toString();
+    this.typeFilters[1].count = data.length.toString();
+    this.difficultyFilters[0].count = data.length.toString();
+
+    const easyCount = data.filter((e: any) => diffMap[e.level ?? ''] === 'easy').length;
+    const medCount = data.filter((e: any) => diffMap[e.level ?? ''] === 'medium').length;
+    const hardCount = data.filter((e: any) => diffMap[e.level ?? ''] === 'hard').length;
+
+    this.difficultyFilters[1].count = easyCount.toString();
+    this.difficultyFilters[2].count = medCount.toString();
+    this.difficultyFilters[3].count = hardCount.toString();
+  }
+
+  onStartExam(exam: ExamResponse): void {
+    if (!this.hasActivePackage) {
+      this.notificationService.show('Bạn cần nâng cấp gói để mở khóa đề thi này!', 'error');
+      // scroll up to pricing packages
+      window.scrollTo({ top: 300, behavior: 'smooth' });
+      return;
+    }
+    this.router.navigate(['/test'], { queryParams: { examId: exam.examId } });
+  }
+
+  loadAllPackages(): void {
+    this.paymentService.getActivePackages().subscribe({
+      next: (data) => {
+        // Enforce the Basic, Pro, Premium exact order and descriptions if not fully detailed in DB
+        const pkgDetails: { [key: string]: { price: string, desc: string, items: string[] } } = {
+          'Basic': { 
+            price: '199.000đ', 
+            desc: 'Phù hợp ôn luyện cơ bản với mục tiêu trung bình khá.',
+            items: ['Mở khóa Đề thi số 1', 'Mở khóa Đề thi số 2', 'Giải thích chi tiết đáp án', 'Hạn sử dụng trong 30 ngày']
+          },
+          'Pro': { 
+            price: '299.000đ', 
+            desc: 'Lựa chọn hàng đầu cho học sinh đặt mục tiêu chuyên Anh.',
+            items: ['Mở khóa Đề thi số 1', 'Mở khóa Đề thi số 2', 'Mở khóa Đề thi số 3', 'Phân tích kết quả làm bài nâng cao', 'Hạn sử dụng trong 30 ngày']
+          },
+          'Premium': { 
+            price: '399.000đ', 
+            desc: 'Mở khóa toàn diện mọi giới hạn học tập trên hệ thống.',
+            items: ['Mở khóa Đề thi số 1', 'Mở khóa Đề thi số 2', 'Mở khóa Đề thi số 3', 'Mở khóa Đề thi số 4', 'Đặc quyền hỗ trợ từ Admin 24/7', 'Hạn sử dụng trong 30 ngày']
+          }
+        };
+
+        this.packages = data.map(p => {
+          const details = pkgDetails[p.name] ?? { price: p.price.toLocaleString() + 'đ', desc: p.description ?? '', items: [] };
+          return {
+            ...p,
+            description: details.desc,
+            // Attach a temporary field to hold description items
+            items: details.items
+          } as any;
+        }).sort((a, b) => a.price - b.price);
+      },
+      error: (err) => {
+        console.error('Failed to load packages', err);
+      }
+    });
+  }
+
+  onBuyPackage(pkg: PackageResponse): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/de-thi' } });
+      return;
+    }
+
+    this.selectedPackage = pkg;
+    this.isProcessingPayment = true;
+
+    this.paymentService.checkout(pkg.packageId, 'banking').subscribe({
+      next: (res) => {
+        // Redirect directly to PayOS Checkout URL
+        window.location.href = res.checkoutUrl;
+      },
+      error: (err) => {
+        this.isProcessingPayment = false;
+        this.notificationService.show('Không thể tạo giao dịch. Vui lòng thử lại!', 'error');
+      }
+    });
+  }
+
+  getDifficultyClass(level: string): string {
+    if (level === 'Khó') return 'diff-hard';
+    if (level === 'Dễ') return 'diff-easy';
+    return 'diff-medium';
+  }
+
+  getRandomCoverClass(id: string): string {
+    const covers = ['cover-blue', 'cover-sky', 'cover-teal', 'cover-indigo', 'cover-emerald', 'cover-violet'];
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % covers.length;
+    return covers[index];
+  }
 
   setTab(id: string): void {
     this.activeTab = id;

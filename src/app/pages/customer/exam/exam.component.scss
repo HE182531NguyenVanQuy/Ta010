@@ -908,3 +908,438 @@
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   PRICING & SUBSCRIPTION PLAN CUSTOM CSS (TAO10 ACCENT STYLE)
+   ========================================================================== */
+.pricing-container {
+  max-width: 1100px;
+  margin: 32px auto 64px;
+}
+.pricing-header {
+  text-align: center;
+  margin-bottom: 48px;
+  
+  .pricing-badge {
+    display: inline-block;
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--sky-deep);
+    border: 1.5px solid var(--sky-light);
+    border-radius: 30px;
+    padding: 6px 16px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-family: var(--font-head);
+    font-size: 2.2rem;
+    font-weight: 850;
+    color: var(--gray-900);
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: var(--gray-500);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.pricing-card {
+  background: #fff;
+  border: 1.5px solid var(--sky-light);
+  border-radius: 24px;
+  padding: 40px 32px;
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.05);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(14, 165, 233, 0.12);
+    border-color: var(--sky-glow);
+  }
+
+  &.featured {
+    border: 2px solid var(--sky);
+    box-shadow: 0 20px 50px rgba(14, 165, 233, 0.15);
+    background: linear-gradient(180deg, #fff, #f0f9ff);
+
+    .pricing-card-badge {
+      position: absolute;
+      top: 14px;
+      right: -32px;
+      background: #f59e0b;
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 6px 36px;
+      transform: rotate(45deg);
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-subscribe {
+      background: linear-gradient(135deg, var(--sky-deep), var(--sky));
+      color: #fff;
+      border: none;
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+
+      &:hover {
+        background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
+        box-shadow: 0 8px 24px rgba(14, 165, 233, 0.5);
+      }
+    }
+  }
+}
+
+.pricing-card-header {
+  margin-bottom: 28px;
+  border-bottom: 1.5px solid var(--sky-light);
+  padding-bottom: 24px;
+
+  .package-name {
+    font-family: var(--font-head);
+    font-size: 1.4rem;
+    font-weight: 850;
+    color: var(--gray-900);
+    margin-bottom: 8px;
+  }
+
+  .package-desc {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    line-height: 1.5;
+    min-height: 48px;
+  }
+
+  .package-price {
+    margin-top: 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+
+    .price-val {
+      font-family: var(--font-head);
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--gray-900);
+    }
+
+    .price-duration {
+      font-size: 0.82rem;
+      color: var(--gray-400);
+      font-weight: 600;
+    }
+  }
+}
+
+.pricing-card-body {
+  flex: 1;
+}
+
+.package-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.84rem;
+    color: var(--gray-600);
+    line-height: 1.4;
+
+    .check-icon {
+      color: #10b981;
+      font-weight: 900;
+      font-size: 0.95rem;
+    }
+  }
+}
+
+.btn-subscribe {
+  width: 100%;
+  font-family: var(--font-head);
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  background: #fff;
+  border: 2px solid var(--sky-light);
+  color: var(--sky-deep);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--sky-pale);
+    border-color: var(--sky-glow);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* ==========================================================================
+   ACTIVE PACKAGE BANNER
+   ========================================================================== */
+.active-pkg-banner {
+  background: linear-gradient(90deg, #ecfdf5, #f0fdf4);
+  border: 1.5px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-family: var(--font-head);
+  font-size: 0.84rem;
+  color: #065f46;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  strong {
+    color: #047857;
+    font-weight: 800;
+  }
+}
+
+/* ==========================================================================
+   PAYMENT GATEWAY MODAL (GLASSMORPHISM MOCK BANKING)
+   ========================================================================== */
+.payment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease;
+}
+
+.payment-modal {
+  background: #fff;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 30px 100px rgba(15, 23, 42, 0.25);
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  border-bottom: 1.5px solid var(--sky-light);
+
+  h3 {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 850;
+    color: var(--gray-900);
+  }
+
+  .btn-close-modal {
+    font-size: 1.8rem;
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+
+    &:hover {
+      color: var(--gray-700);
+    }
+  }
+}
+
+.pm-body {
+  padding: 28px;
+}
+
+.pm-info-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 28px;
+}
+
+.pm-qr-section {
+  text-align: center;
+
+  .qr-code-img {
+    width: 200px;
+    height: 200px;
+    border-radius: 16px;
+    border: 1.5px solid var(--sky-light);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.06);
+    padding: 8px;
+    background: #fff;
+  }
+
+  .qr-note {
+    font-size: 0.74rem;
+    color: var(--gray-400);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+}
+
+.pm-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pm-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--sky-light);
+
+  .pm-label {
+    color: var(--gray-400);
+  }
+
+  .pm-value {
+    font-family: var(--font-head);
+    font-weight: 700;
+    color: var(--gray-800);
+
+    &.highlight {
+      color: var(--sky-deep);
+    }
+
+    &.price-highlight {
+      font-size: 1.2rem;
+      color: #ef4444;
+      font-weight: 900;
+    }
+
+    &.code-value {
+      font-family: monospace;
+      color: var(--gray-700);
+      background: var(--sky-pale);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      border: 1px solid var(--sky-light);
+    }
+  }
+}
+
+.payment-instructions {
+  margin-top: 14px;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.78rem;
+  color: #78350f;
+  line-height: 1.5;
+
+  p {
+    margin-bottom: 6px;
+  }
+
+  ol {
+    padding-left: 16px;
+  }
+}
+
+.pm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 28px;
+  background: var(--sky-pale);
+  border-top: 1.5px solid var(--sky-light);
+
+  .btn-cancel {
+    font-family: var(--font-head);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #fff;
+    border: 1.5px solid var(--sky-light);
+    color: var(--gray-500);
+
+    &:hover {
+      background: var(--gray-50);
+      color: var(--gray-700);
+    }
+  }
+
+  .btn-confirm-payment {
+    font-family: var(--font-head);
+    font-size: 0.8rem;
+    font-weight: 850;
+    padding: 10px 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #10b981;
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+
+    &:hover {
+      background: #059669;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 768px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+  .pm-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .pm-qr-section .qr-code-img {
+    width: 140px;
+    height: 140px;
+  }
+}
+
