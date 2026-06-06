@@ -72,7 +72,6 @@ export class ExamComponent implements OnInit {
     if (!this.authService.isLoggedIn()) {
       this.hasActivePackage = false;
       this.loadAllPackages();
-      this.loadAllExamsFallback();
       return;
     }
 
@@ -85,13 +84,11 @@ export class ExamComponent implements OnInit {
           this.loadExams();
         } else {
           this.loadAllPackages();
-          this.loadAllExamsFallback();
         }
       },
       error: () => {
         this.hasActivePackage = false;
         this.loadAllPackages();
-        this.loadAllExamsFallback();
       }
     });
   }
