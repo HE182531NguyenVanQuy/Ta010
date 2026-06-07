@@ -28,7 +28,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/customer/exam/exam.component').then((m) => m.ExamComponent),
   },
   {
-    path: 'test',
+    path: 'lam-bai',
     loadComponent: () => import('./pages/customer/test/test.component').then((m) => m.TestComponent),
   },
   {

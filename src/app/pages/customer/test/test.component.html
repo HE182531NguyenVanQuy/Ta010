@@ -4,743 +4,101 @@
   <div class="page-hero-inner">
     <div class="hero-meta-row">
       <span class="hero-tag"><div class="hero-dot"></div>Đề thi trắc nghiệm</span>
-      <span class="hero-tag">📋 Tổng hợp 2026</span>
-      <span class="hero-tag">⭐ Chuẩn cấu trúc Hà Nội</span>
+      <span class="hero-tag">Tổng hợp 2026</span>
+      <span class="hero-tag">Lấy dữ liệu từ API</span>
     </div>
-    <h1>ĐỀ ÔN THI VÀO LỚP 10 – <span class="highlight">ĐỀ SỐ 1</span></h1>
-    <p class="hero-desc">Bài kiểm tra 40 câu trắc nghiệm – Bao gồm phát âm, trọng âm, ngữ pháp, đọc hiểu và viết lại câu. Làm bài, chấm điểm và xem đáp án chi tiết ngay trên trang.</p>
+    <h1>{{ examData?.title || 'Đang tải đề thi' }}</h1>
+    <p class="hero-desc">{{ examData?.description || 'Dữ liệu đề thi đang được tải từ hệ thống.' }}</p>
     <div class="hero-info-row">
       <div class="hi-item">
-        <div class="hi-icon">📝</div>
+        <div class="hi-icon">Q</div>
         <div>
-          <div class="hi-val">40 câu</div>
-          <div class="hi-label">Trắc nghiệm</div>
+          <div class="hi-val">{{ totalQuestions }}</div>
+          <div class="hi-label">Câu</div>
         </div>
       </div>
       <div class="hi-item">
-        <div class="hi-icon">⏱</div>
+        <div class="hi-icon">T</div>
         <div>
-          <div class="hi-val">45 phút</div>
-          <div class="hi-label">Thời gian</div>
+          <div class="hi-val">{{ durationMinutes }}</div>
+          <div class="hi-label">Phút</div>
         </div>
       </div>
       <div class="hi-item">
-        <div class="hi-icon">⭐</div>
+        <div class="hi-icon">10</div>
         <div>
-          <div class="hi-val">10 điểm</div>
+          <div class="hi-val">10</div>
           <div class="hi-label">Thang điểm</div>
-        </div>
-      </div>
-      <div class="hi-item">
-        <div class="hi-icon">👁</div>
-        <div>
-          <div class="hi-val">22.4k</div>
-          <div class="hi-label">Lượt làm bài</div>
         </div>
       </div>
     </div>
   </div>
 </div>
-
+<!-- LOADING STATE -->
+<div *ngIf="loading" class="exam-main" style="display: flex; justify-content: center; align-items: center; height: 300px;">
+  <div style="text-align: center;">
+    <div style="font-size: 24px; margin-bottom: 10px;">Đang tải đề thi...</div>
+    <div style="font-size: 14px; color: #666;">Vui lòng chờ một chút</div>
+  </div>
+</div>
+<!-- EMPTY STATE -->
+<div *ngIf="!loading && questions.length === 0" class="exam-main" style="display: flex; justify-content: center; align-items: center; height: 300px;">
+  <div style="text-align: center;">
+    <div style="font-size: 24px; margin-bottom: 10px;">Không có câu hỏi</div>
+    <div style="font-size: 14px; color: #666;">API chưa trả về danh sách câu hỏi cho đề thi này.</div>
+  </div>
+</div>
 <!-- EXAM MAIN LAYOUT -->
-<div class="exam-main">
-
-  <!-- ===== LEFT: QUESTIONS ===== -->
+<div class="exam-main" *ngIf="!loading && questions.length > 0">
+  <!-- LEFT: QUESTIONS -->
   <div class="exam-wrapper" id="examWrapper">
-
-    <!-- SECTION I: PRONUNCIATION -->
     <div class="section-group">
       <div class="section-header">
-        <h2>PHẦN I – Phát âm (Câu 1–2)<br>
-          <span class="section-sub">Mark the word whose underlined part differs from the other three in pronunciation.</span>
+        <h2>{{ examData?.title }}<br>
+          <span class="section-sub">{{ examData?.description }}</span>
         </h2>
-        <span class="section-badge">2 câu</span>
+        <span class="section-badge">{{ totalQuestions }} câu</span>
       </div>
       <div class="section-body">
-
-        <div class="question-block" id="q1">
+        <div
+          class="question-block"
+          *ngFor="let question of questions"
+          [id]="'q' + question.questionId">
           <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(1)">1</div>
-            <div class="q-text">Question 1. Choose the word whose underlined part is pronounced <strong>differently</strong> from the other three:</div>
+            <div class="q-num" [ngClass]="getQNumClass(question.questionId)">
+              {{ question.questionNumber }}
+            </div>
+            <div class="q-text" [innerHTML]="question.questionText"></div>
           </div>
           <div class="options">
-            <div class="option" [ngClass]="getOptionClass(1, 'A')" (click)="selectOpt(1, 'A')"><div class="opt-label">A</div><div class="opt-text"><u>e</u>ndangered</div></div>
-            <div class="option" [ngClass]="getOptionClass(1, 'B')" (click)="selectOpt(1, 'B')"><div class="opt-label">B</div><div class="opt-text">g<u>e</u>neration</div></div>
-            <div class="option" [ngClass]="getOptionClass(1, 'C')" (click)="selectOpt(1, 'C')"><div class="opt-label">C</div><div class="opt-text"><u>e</u>mbroider</div></div>
-            <div class="option" [ngClass]="getOptionClass(1, 'D')" (click)="selectOpt(1, 'D')"><div class="opt-label">D</div><div class="opt-text"><u>e</u>nvironment</div></div>
+            <div
+              class="option"
+              *ngFor="let option of getQuestionOptions(question); let optionIndex = index"
+              [ngClass]="getOptionClass(question.questionId, getOptionLetter(optionIndex), question)"
+              (click)="selectOpt(question.questionId, getOptionLetter(optionIndex))">
+              <div class="opt-label">{{ getOptionLetter(optionIndex) }}</div>
+              <div class="opt-text" [innerHTML]="option"></div>
+            </div>
           </div>
-          <div class="explanation" [class.show]="explVisible[1]">
-            <div class="expl-label">✅ Đáp án đúng: B – generation</div>
-            <div class="expl-text">Các từ A, C, D có âm /ɪ/ (endangered, embroider, environment). Riêng <strong>generation</strong> có âm /e/ ở âm tiết "ge-". Đáp án là B.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q2">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(2)">2</div>
-            <div class="q-text">Question 2. Choose the word whose underlined part is pronounced <strong>differently</strong> from the other three:</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(2, 'A')" (click)="selectOpt(2, 'A')"><div class="opt-label">A</div><div class="opt-text">hand<u>i</u>craft</div></div>
-            <div class="option" [ngClass]="getOptionClass(2, 'B')" (click)="selectOpt(2, 'B')"><div class="opt-label">B</div><div class="opt-text">commun<u>i</u>cate</div></div>
-            <div class="option" [ngClass]="getOptionClass(2, 'C')" (click)="selectOpt(2, 'C')"><div class="opt-label">C</div><div class="opt-text">rem<u>i</u>nd</div></div>
-            <div class="option" [ngClass]="getOptionClass(2, 'D')" (click)="selectOpt(2, 'D')"><div class="opt-label">D</div><div class="opt-text">trad<u>i</u>tional</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[2]">
-            <div class="expl-label">✅ Đáp án đúng: C – remind</div>
-            <div class="expl-text">Riêng <strong>remind</strong> phát âm /aɪ/. Các từ A, B, D phát âm /ɪ/. Đáp án là C.</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- SECTION II: WORD STRESS -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN II – Trọng âm (Câu 3–4)<br>
-          <span class="section-sub">Mark the word that differs in the position of primary stress.</span>
-        </h2>
-        <span class="section-badge">2 câu</span>
-      </div>
-      <div class="section-body">
-
-        <div class="question-block" id="q3">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(3)">3</div>
-            <div class="q-text">Question 3. Mark the word that <strong>differs</strong> in the position of primary stress.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(3, 'A')" (click)="selectOpt(3, 'A')"><div class="opt-label">A</div><div class="opt-text">'surface</div></div>
-            <div class="option" [ngClass]="getOptionClass(3, 'B')" (click)="selectOpt(3, 'B')"><div class="opt-label">B</div><div class="opt-text">'office</div></div>
-            <div class="option" [ngClass]="getOptionClass(3, 'C')" (click)="selectOpt(3, 'C')"><div class="opt-label">C</div><div class="opt-text">a'ccept</div></div>
-            <div class="option" [ngClass]="getOptionClass(3, 'D')" (click)="selectOpt(3, 'D')"><div class="opt-label">D</div><div class="opt-text">'workshop</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[3]">
-            <div class="expl-label">✅ Đáp án đúng: C – accept</div>
-            <div class="expl-text">Các từ A, B, D có trọng âm ở âm tiết 1. Riêng <strong>accept</strong> có trọng âm ở âm tiết 2 /əkˈsept/. Đáp án là C.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q4">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(4)">4</div>
-            <div class="q-text">Question 4. Mark the word that <strong>differs</strong> in the position of primary stress.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(4, 'A')" (click)="selectOpt(4, 'A')"><div class="opt-label">A</div><div class="opt-text">a'ttraction</div></div>
-            <div class="option" [ngClass]="getOptionClass(4, 'B')" (click)="selectOpt(4, 'B')"><div class="opt-label">B</div><div class="opt-text">'grandparent</div></div>
-            <div class="option" [ngClass]="getOptionClass(4, 'C')" (click)="selectOpt(4, 'C')"><div class="opt-label">C</div><div class="opt-text">de'partment</div></div>
-            <div class="option" [ngClass]="getOptionClass(4, 'D')" (click)="selectOpt(4, 'D')"><div class="opt-label">D</div><div class="opt-text">be'havior</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[4]">
-            <div class="expl-label">✅ Đáp án đúng: B – grandparent</div>
-            <div class="expl-text">Các từ A, C, D có trọng âm ở âm tiết 2. Riêng <strong>grandparent</strong> có trọng âm ở âm tiết 1. Đáp án là B.</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- SECTION III: ERROR CORRECTION -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN III – Tìm lỗi sai (Câu 5–8)<br>
-          <span class="section-sub">Mark the underlined part that needs correction.</span>
-        </h2>
-        <span class="section-badge">4 câu</span>
-      </div>
-      <div class="section-body">
-
-        <div class="question-block" id="q5">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(5)">5</div>
-            <div class="q-text">Question 5. When the church <u>was</u> first <u>establish</u> in 1973, it <u>consisted</u> of only two hectares of <u>land</u>.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(5, 'A')" (click)="selectOpt(5, 'A')"><div class="opt-label">A</div><div class="opt-text">was</div></div>
-            <div class="option" [ngClass]="getOptionClass(5, 'B')" (click)="selectOpt(5, 'B')"><div class="opt-label">B</div><div class="opt-text">establish</div></div>
-            <div class="option" [ngClass]="getOptionClass(5, 'C')" (click)="selectOpt(5, 'C')"><div class="opt-label">C</div><div class="opt-text">consisted</div></div>
-            <div class="option" [ngClass]="getOptionClass(5, 'D')" (click)="selectOpt(5, 'D')"><div class="opt-label">D</div><div class="opt-text">land</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[5]">
-            <div class="expl-label">✅ Đáp án đúng: B – establish → established</div>
-            <div class="expl-text">Câu dùng thể bị động, sau "was first" cần <strong>V3 (established)</strong>.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q6">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(6)">6</div>
-            <div class="q-text">Question 6. <u>What</u> do you practice <u>speaking</u> English all day <u>for</u>? <u>Winning</u> a prize.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(6, 'A')" (click)="selectOpt(6, 'A')"><div class="opt-label">A</div><div class="opt-text">what</div></div>
-            <div class="option" [ngClass]="getOptionClass(6, 'B')" (click)="selectOpt(6, 'B')"><div class="opt-label">B</div><div class="opt-text">speaking</div></div>
-            <div class="option" [ngClass]="getOptionClass(6, 'C')" (click)="selectOpt(6, 'C')"><div class="opt-label">C</div><div class="opt-text">for</div></div>
-            <div class="option" [ngClass]="getOptionClass(6, 'D')" (click)="selectOpt(6, 'D')"><div class="opt-label">D</div><div class="opt-text">winning</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[6]">
-            <div class="expl-label">✅ Đáp án đúng: D – winning → to win</div>
-            <div class="expl-text">Mục đích trả lời "What...for?" dùng <strong>to + V</strong>.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q7">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(7)">7</div>
-            <div class="q-text">Question 7. <u>The</u> Pikes put <u>away</u> their trip <u>because of</u> bad <u>weather</u>.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(7, 'A')" (click)="selectOpt(7, 'A')"><div class="opt-label">A</div><div class="opt-text">The</div></div>
-            <div class="option" [ngClass]="getOptionClass(7, 'B')" (click)="selectOpt(7, 'B')"><div class="opt-label">B</div><div class="opt-text">put away</div></div>
-            <div class="option" [ngClass]="getOptionClass(7, 'C')" (click)="selectOpt(7, 'C')"><div class="opt-label">C</div><div class="opt-text">because of</div></div>
-            <div class="option" [ngClass]="getOptionClass(7, 'D')" (click)="selectOpt(7, 'D')"><div class="opt-label">D</div><div class="opt-text">weather</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[7]">
-            <div class="expl-label">✅ Đáp án đúng: B – put away → put off</div>
-            <div class="expl-text">"Put away" = cất đi. Đúng nghĩa phải là <strong>"put off"</strong> (hoãn lại).</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q8">
-          <div class="q-header">
-            <div class="q-num" [ngClass]="getQNumClass(8)">8</div>
-            <div class="q-text">Question 8. The children were <u>so</u> <u>amusing</u> at the cartoon <u>that</u> they <u>couldn't help laughing</u>.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(8, 'A')" (click)="selectOpt(8, 'A')"><div class="opt-label">A</div><div class="opt-text">so</div></div>
-            <div class="option" [ngClass]="getOptionClass(8, 'B')" (click)="selectOpt(8, 'B')"><div class="opt-label">B</div><div class="opt-text">amusing</div></div>
-            <div class="option" [ngClass]="getOptionClass(8, 'C')" (click)="selectOpt(8, 'C')"><div class="opt-label">C</div><div class="opt-text">that</div></div>
-            <div class="option" [ngClass]="getOptionClass(8, 'D')" (click)="selectOpt(8, 'D')"><div class="opt-label">D</div><div class="opt-text">couldn't help laughing</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[8]">
-            <div class="expl-label">✅ Đáp án đúng: B – amusing → amused</div>
-            <div class="expl-text">Cảm xúc của người dùng <strong>V3 (amused)</strong>.</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- SECTION IV: GRAMMAR & VOCAB -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN IV – Ngữ pháp & Từ vựng (Câu 9–18)<br>
-          <span class="section-sub">Mark the correct answer to each of the following questions.</span>
-        </h2>
-        <span class="section-badge">10 câu</span>
-      </div>
-      <div class="section-body">
-
-        <div class="question-block" id="q9">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(9)">9</div>
-            <div class="q-text">Question 9. Since changing the way of production, many businessmen have voluntarily joined together for ____________.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(9, 'A')" (click)="selectOpt(9, 'A')"><div class="opt-label">A</div><div class="opt-text">cooperate</div></div>
-            <div class="option" [ngClass]="getOptionClass(9, 'B')" (click)="selectOpt(9, 'B')"><div class="opt-label">B</div><div class="opt-text">cooperative</div></div>
-            <div class="option" [ngClass]="getOptionClass(9, 'C')" (click)="selectOpt(9, 'C')"><div class="opt-label">C</div><div class="opt-text">cooperation</div></div>
-            <div class="option" [ngClass]="getOptionClass(9, 'D')" (click)="selectOpt(9, 'D')"><div class="opt-label">D</div><div class="opt-text">cooperating</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[9]">
-            <div class="expl-label">✅ Đáp án đúng: C – cooperation</div>
-            <div class="expl-text">Sau giới từ "for" cần danh từ. "Cooperation" là danh từ phù hợp.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q10">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(10)">10</div>
-            <div class="q-text">Question 10. Tet is a festival ____________ occurs in late January or early February.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(10, 'A')" (click)="selectOpt(10, 'A')"><div class="opt-label">A</div><div class="opt-text">when</div></div>
-            <div class="option" [ngClass]="getOptionClass(10, 'B')" (click)="selectOpt(10, 'B')"><div class="opt-label">B</div><div class="opt-text">which</div></div>
-            <div class="option" [ngClass]="getOptionClass(10, 'C')" (click)="selectOpt(10, 'C')"><div class="opt-label">C</div><div class="opt-text">who</div></div>
-            <div class="option" [ngClass]="getOptionClass(10, 'D')" (click)="selectOpt(10, 'D')"><div class="opt-label">D</div><div class="opt-text">where</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[10]">
-            <div class="expl-label">✅ Đáp án đúng: B – which</div>
-            <div class="expl-text">"Festival" là vật → dùng <strong>which</strong>.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q11">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(11)">11</div>
-            <div class="q-text">Question 11. If I ____________ rich, I ____________ all over the world.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(11, 'A')" (click)="selectOpt(11, 'A')"><div class="opt-label">A</div><div class="opt-text">were / would be</div></div>
-            <div class="option" [ngClass]="getOptionClass(11, 'B')" (click)="selectOpt(11, 'B')"><div class="opt-label">B</div><div class="opt-text">am / will</div></div>
-            <div class="option" [ngClass]="getOptionClass(11, 'C')" (click)="selectOpt(11, 'C')"><div class="opt-label">C</div><div class="opt-text">were / will</div></div>
-            <div class="option" [ngClass]="getOptionClass(11, 'D')" (click)="selectOpt(11, 'D')"><div class="opt-label">D</div><div class="opt-text">am / would be</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[11]">
-            <div class="expl-label">✅ Đáp án đúng: A</div>
-            <div class="expl-text">Câu điều kiện loại 2: <strong>If + S + were, S + would + V</strong>.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q12">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(12)">12</div>
-            <div class="q-text">Question 12. When he lived in the city, he ____________ to the cinema weekly.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(12, 'A')" (click)="selectOpt(12, 'A')"><div class="opt-label">A</div><div class="opt-text">got used to go</div></div>
-            <div class="option" [ngClass]="getOptionClass(12, 'B')" (click)="selectOpt(12, 'B')"><div class="opt-label">B</div><div class="opt-text">used to going</div></div>
-            <div class="option" [ngClass]="getOptionClass(12, 'C')" (click)="selectOpt(12, 'C')"><div class="opt-label">C</div><div class="opt-text">used to go</div></div>
-            <div class="option" [ngClass]="getOptionClass(12, 'D')" (click)="selectOpt(12, 'D')"><div class="opt-label">D</div><div class="opt-text">was used to going</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[12]">
-            <div class="expl-label">✅ Đáp án đúng: C – used to go</div>
-            <div class="expl-text"><strong>Used to + V</strong> diễn tả thói quen quá khứ.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q13">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(13)">13</div>
-            <div class="q-text">Question 13. ____________ the storm, the ship couldn't reach its destination on time.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(13, 'A')" (click)="selectOpt(13, 'A')"><div class="opt-label">A</div><div class="opt-text">When</div></div>
-            <div class="option" [ngClass]="getOptionClass(13, 'B')" (click)="selectOpt(13, 'B')"><div class="opt-label">B</div><div class="opt-text">Because of</div></div>
-            <div class="option" [ngClass]="getOptionClass(13, 'C')" (click)="selectOpt(13, 'C')"><div class="opt-label">C</div><div class="opt-text">Despite of</div></div>
-            <div class="option" [ngClass]="getOptionClass(13, 'D')" (click)="selectOpt(13, 'D')"><div class="opt-label">D</div><div class="opt-text">Although</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[13]">
-            <div class="expl-label">✅ Đáp án đúng: B – Because of</div>
-            <div class="expl-text"><strong>Because of + danh từ</strong> diễn tả nguyên nhân.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q14">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(14)">14</div>
-            <div class="q-text">Question 14. I finished my project a few days ahead ____________ the deadline.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(14, 'A')" (click)="selectOpt(14, 'A')"><div class="opt-label">A</div><div class="opt-text">to</div></div>
-            <div class="option" [ngClass]="getOptionClass(14, 'B')" (click)="selectOpt(14, 'B')"><div class="opt-label">B</div><div class="opt-text">for</div></div>
-            <div class="option" [ngClass]="getOptionClass(14, 'C')" (click)="selectOpt(14, 'C')"><div class="opt-label">C</div><div class="opt-text">at</div></div>
-            <div class="option" [ngClass]="getOptionClass(14, 'D')" (click)="selectOpt(14, 'D')"><div class="opt-label">D</div><div class="opt-text">of</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[14]">
-            <div class="expl-label">✅ Đáp án đúng: D – of</div>
-            <div class="expl-text">Cụm cố định: <strong>"ahead of"</strong>.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q15">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(15)">15</div>
-            <div class="q-text">Question 15. The cat was ____________ to wait for the mouse to come out of its hole.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(15, 'A')" (click)="selectOpt(15, 'A')"><div class="opt-label">A</div><div class="opt-text">patient enough</div></div>
-            <div class="option" [ngClass]="getOptionClass(15, 'B')" (click)="selectOpt(15, 'B')"><div class="opt-label">B</div><div class="opt-text">enough patient</div></div>
-            <div class="option" [ngClass]="getOptionClass(15, 'C')" (click)="selectOpt(15, 'C')"><div class="opt-label">C</div><div class="opt-text">too patient</div></div>
-            <div class="option" [ngClass]="getOptionClass(15, 'D')" (click)="selectOpt(15, 'D')"><div class="opt-label">D</div><div class="opt-text">so patient</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[15]">
-            <div class="expl-label">✅ Đáp án đúng: A – patient enough</div>
-            <div class="expl-text">Cấu trúc: <strong>adj + enough + to V</strong>.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q16">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(16)">16</div>
-            <div class="q-text">Question 16. They felt ____________ when they failed the exams the second time.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(16, 'A')" (click)="selectOpt(16, 'A')"><div class="opt-label">A</div><div class="opt-text">discouraged</div></div>
-            <div class="option" [ngClass]="getOptionClass(16, 'B')" (click)="selectOpt(16, 'B')"><div class="opt-label">B</div><div class="opt-text">puzzled</div></div>
-            <div class="option" [ngClass]="getOptionClass(16, 'C')" (click)="selectOpt(16, 'C')"><div class="opt-label">C</div><div class="opt-text">angry</div></div>
-            <div class="option" [ngClass]="getOptionClass(16, 'D')" (click)="selectOpt(16, 'D')"><div class="opt-label">D</div><div class="opt-text">disgusted</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[16]">
-            <div class="expl-label">✅ Đáp án đúng: A – discouraged</div>
-            <div class="expl-text"><strong>Discouraged</strong> (nản lòng) phù hợp khi trượt thi.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q17">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(17)">17</div>
-            <div class="q-text">Question 17. I have bought a present for my sister, and now I need some ____________.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(17, 'A')" (click)="selectOpt(17, 'A')"><div class="opt-label">A</div><div class="opt-text">wrapped paper</div></div>
-            <div class="option" [ngClass]="getOptionClass(17, 'B')" (click)="selectOpt(17, 'B')"><div class="opt-label">B</div><div class="opt-text">wrapping paper</div></div>
-            <div class="option" [ngClass]="getOptionClass(17, 'C')" (click)="selectOpt(17, 'C')"><div class="opt-label">C</div><div class="opt-text">paper wrap</div></div>
-            <div class="option" [ngClass]="getOptionClass(17, 'D')" (click)="selectOpt(17, 'D')"><div class="opt-label">D</div><div class="opt-text">wrap paper</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[17]">
-            <div class="expl-label">✅ Đáp án đúng: B – wrapping paper</div>
-            <div class="expl-text"><strong>Wrapping paper</strong> = giấy gói quà.</div>
-          </div>
-        </div>
-
-        <div class="question-block" id="q18">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(18)">18</div>
-            <div class="q-text">Question 18. It is ____________ that I can't put it down.</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(18, 'A')" (click)="selectOpt(18, 'A')"><div class="opt-label">A</div><div class="opt-text">such interesting story</div></div>
-            <div class="option" [ngClass]="getOptionClass(18, 'B')" (click)="selectOpt(18, 'B')"><div class="opt-label">B</div><div class="opt-text">so interesting story</div></div>
-            <div class="option" [ngClass]="getOptionClass(18, 'C')" (click)="selectOpt(18, 'C')"><div class="opt-label">C</div><div class="opt-text">too interesting story</div></div>
-            <div class="option" [ngClass]="getOptionClass(18, 'D')" (click)="selectOpt(18, 'D')"><div class="opt-label">D</div><div class="opt-text">such an interesting story</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[18]">
-            <div class="expl-label">✅ Đáp án đúng: D – such an interesting story</div>
-            <div class="expl-text">Cấu trúc: <strong>such + a/an + adj + N + that</strong>.</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- SECTION V: CONVERSATION -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN V – Tình huống giao tiếp (Câu 19–20)<br>
-          <span class="section-sub">Mark the correct response to each exchange.</span>
-        </h2>
-        <span class="section-badge">2 câu</span>
-      </div>
-      <div class="section-body">
-        <div class="question-block" id="q19">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(19)">19</div>
-            <div class="q-text">Question 19. – Laura: <strong>"You look great in the new dress!"</strong><br>– Maria: "<strong>____________</strong>"</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(19, 'A')" (click)="selectOpt(19, 'A')"><div class="opt-label">A</div><div class="opt-text">Oh, thank you.</div></div>
-            <div class="option" [ngClass]="getOptionClass(19, 'B')" (click)="selectOpt(19, 'B')"><div class="opt-label">B</div><div class="opt-text">Yours is lovely, too.</div></div>
-            <div class="option" [ngClass]="getOptionClass(19, 'C')" (click)="selectOpt(19, 'C')"><div class="opt-label">C</div><div class="opt-text">You are welcome.</div></div>
-            <div class="option" [ngClass]="getOptionClass(19, 'D')" (click)="selectOpt(19, 'D')"><div class="opt-label">D</div><div class="opt-text">Of course not, you bet!</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[19]">
-            <div class="expl-label">✅ Đáp án đúng: A</div>
-            <div class="expl-text">Khi được khen, câu trả lời lịch sự nhất là <strong>"Oh, thank you."</strong></div>
-          </div>
-        </div>
-        <div class="question-block" id="q20">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(20)">20</div>
-            <div class="q-text">Question 20. – John: <strong>"Will you be able to come to the meeting?"</strong><br>– Jack: "<strong>____________</strong>"</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(20, 'A')" (click)="selectOpt(20, 'A')"><div class="opt-label">A</div><div class="opt-text">Of course you will.</div></div>
-            <div class="option" [ngClass]="getOptionClass(20, 'B')" (click)="selectOpt(20, 'B')"><div class="opt-label">B</div><div class="opt-text">I'm afraid not.</div></div>
-            <div class="option" [ngClass]="getOptionClass(20, 'C')" (click)="selectOpt(20, 'C')"><div class="opt-label">C</div><div class="opt-text">I'm sorry not.</div></div>
-            <div class="option" [ngClass]="getOptionClass(20, 'D')" (click)="selectOpt(20, 'D')"><div class="opt-label">D</div><div class="opt-text">You must be kidding.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[20]">
-            <div class="expl-label">✅ Đáp án đúng: B – I'm afraid not.</div>
-            <div class="expl-text"><strong>I'm afraid not</strong> = cách từ chối lịch sự.</div>
+          <div
+            class="explanation"
+            *ngIf="question.explanation"
+            [class.show]="explVisible[question.questionId]"
+            [ngClass]="getExplanationClass(question)">
+            <div class="expl-label">Giải thích</div>
+            <div class="expl-text" [innerHTML]="question.explanation"></div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- SECTION VI: SYNONYMS & ANTONYMS -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN VI – Từ đồng / trái nghĩa (Câu 21–24)<br>
-          <span class="section-sub">Closest &amp; Opposite in meaning.</span>
-        </h2>
-        <span class="section-badge">4 câu</span>
-      </div>
-      <div class="section-body">
-        <div class="question-block" id="q21">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(21)">21</div>
-            <div class="q-text">Question 21. Please, <u>go on</u> and finish what you were saying. (SYNONYM)</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(21, 'A')" (click)="selectOpt(21, 'A')"><div class="opt-label">A</div><div class="opt-text">continue</div></div>
-            <div class="option" [ngClass]="getOptionClass(21, 'B')" (click)="selectOpt(21, 'B')"><div class="opt-label">B</div><div class="opt-text">say</div></div>
-            <div class="option" [ngClass]="getOptionClass(21, 'C')" (click)="selectOpt(21, 'C')"><div class="opt-label">C</div><div class="opt-text">tell</div></div>
-            <div class="option" [ngClass]="getOptionClass(21, 'D')" (click)="selectOpt(21, 'D')"><div class="opt-label">D</div><div class="opt-text">stop</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[21]">
-            <div class="expl-label">✅ Đáp án đúng: A – continue</div>
-            <div class="expl-text">"<strong>Go on</strong>" đồng nghĩa với "<strong>continue</strong>".</div>
-          </div>
-        </div>
-        <div class="question-block" id="q22">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(22)">22</div>
-            <div class="q-text">Question 22. Mark has become <u>accustomed to</u> driving to the left. (SYNONYM)</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(22, 'A')" (click)="selectOpt(22, 'A')"><div class="opt-label">A</div><div class="opt-text">has got used to</div></div>
-            <div class="option" [ngClass]="getOptionClass(22, 'B')" (click)="selectOpt(22, 'B')"><div class="opt-label">B</div><div class="opt-text">has become upset with</div></div>
-            <div class="option" [ngClass]="getOptionClass(22, 'C')" (click)="selectOpt(22, 'C')"><div class="opt-label">C</div><div class="opt-text">has become angry with</div></div>
-            <div class="option" [ngClass]="getOptionClass(22, 'D')" (click)="selectOpt(22, 'D')"><div class="opt-label">D</div><div class="opt-text">has the habit of</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[22]">
-            <div class="expl-label">✅ Đáp án đúng: A</div>
-            <div class="expl-text">"<strong>Accustomed to</strong>" = "<strong>got used to</strong>".</div>
-          </div>
-        </div>
-        <div class="question-block" id="q23">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(23)">23</div>
-            <div class="q-text">Question 23. John is one of the most <u>discourteous</u> bosses. (OPPOSITE)</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(23, 'A')" (click)="selectOpt(23, 'A')"><div class="opt-label">A</div><div class="opt-text">impolite</div></div>
-            <div class="option" [ngClass]="getOptionClass(23, 'B')" (click)="selectOpt(23, 'B')"><div class="opt-label">B</div><div class="opt-text">polite</div></div>
-            <div class="option" [ngClass]="getOptionClass(23, 'C')" (click)="selectOpt(23, 'C')"><div class="opt-label">C</div><div class="opt-text">pleasant</div></div>
-            <div class="option" [ngClass]="getOptionClass(23, 'D')" (click)="selectOpt(23, 'D')"><div class="opt-label">D</div><div class="opt-text">obedient</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[23]">
-            <div class="expl-label">✅ Đáp án đúng: B – polite</div>
-            <div class="expl-text">"<strong>Discourteous</strong>" = bất lịch sự → trái nghĩa là "<strong>polite</strong>".</div>
-          </div>
-        </div>
-        <div class="question-block" id="q24">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(24)">24</div>
-            <div class="q-text">Question 24. Henry has found a <u>temporary</u> job in an office. (OPPOSITE)</div>
-          </div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(24, 'A')" (click)="selectOpt(24, 'A')"><div class="opt-label">A</div><div class="opt-text">eternal</div></div>
-            <div class="option" [ngClass]="getOptionClass(24, 'B')" (click)="selectOpt(24, 'B')"><div class="opt-label">B</div><div class="opt-text">genuine</div></div>
-            <div class="option" [ngClass]="getOptionClass(24, 'C')" (click)="selectOpt(24, 'C')"><div class="opt-label">C</div><div class="opt-text">permanent</div></div>
-            <div class="option" [ngClass]="getOptionClass(24, 'D')" (click)="selectOpt(24, 'D')"><div class="opt-label">D</div><div class="opt-text">flexible</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[24]">
-            <div class="expl-label">✅ Đáp án đúng: C – permanent</div>
-            <div class="expl-text">"<strong>Temporary</strong>" → trái nghĩa là "<strong>permanent</strong>".</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SECTION VII: FILL IN THE BLANKS -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN VII – Đọc hiểu điền từ (Câu 25–30)<br>
-          <span class="section-sub">Choose the correct word/phrase for each blank.</span>
-        </h2>
-        <span class="section-badge">6 câu</span>
-      </div>
-      <div class="section-body">
-        <div class="passage-wrap">
-          <div class="passage-box">
-            <p>My name's Hannah and I'm twenty years old. I've got a daughter (25) <span class="blank">______</span> Nicole. She's three now. I live in a small flat in the city center. It isn't a nice place (26) <span class="blank">______</span>. It's very noisy and dirty and there is no place for Nicole to play.</p>
-            <p>I want to move out (27) <span class="blank">______</span> the city and live in the countryside. There aren't any flats for sale in (28) <span class="blank">______</span> small villages near here. I will need to buy a car to go to work.</p>
-            <p>That's why I study at college. I'm studying Business. (29) <span class="blank">______</span> I am at college, my mum looks after Nicole. In the evening, I work as (30) <span class="blank">______</span> cleaner.</p>
-          </div>
-        </div>
-        <div class="question-block" id="q25">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(25)">25</div><div class="q-text">Question 25. I've got a daughter (25) ____________ Nicole.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(25, 'A')" (click)="selectOpt(25, 'A')"><div class="opt-label">A</div><div class="opt-text">name</div></div>
-            <div class="option" [ngClass]="getOptionClass(25, 'B')" (click)="selectOpt(25, 'B')"><div class="opt-label">B</div><div class="opt-text">naming</div></div>
-            <div class="option" [ngClass]="getOptionClass(25, 'C')" (click)="selectOpt(25, 'C')"><div class="opt-label">C</div><div class="opt-text">named</div></div>
-            <div class="option" [ngClass]="getOptionClass(25, 'D')" (click)="selectOpt(25, 'D')"><div class="opt-label">D</div><div class="opt-text">to name</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[25]"><div class="expl-label">✅ C – named</div><div class="expl-text">Rút gọn mệnh đề quan hệ bị động: "a daughter <strong>named</strong> Nicole".</div></div>
-        </div>
-        <div class="question-block" id="q26">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(26)">26</div><div class="q-text">Question 26. It isn't a nice place (26) ____________.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(26, 'A')" (click)="selectOpt(26, 'A')"><div class="opt-label">A</div><div class="opt-text">live</div></div>
-            <div class="option" [ngClass]="getOptionClass(26, 'B')" (click)="selectOpt(26, 'B')"><div class="opt-label">B</div><div class="opt-text">living</div></div>
-            <div class="option" [ngClass]="getOptionClass(26, 'C')" (click)="selectOpt(26, 'C')"><div class="opt-label">C</div><div class="opt-text">lived</div></div>
-            <div class="option" [ngClass]="getOptionClass(26, 'D')" (click)="selectOpt(26, 'D')"><div class="opt-label">D</div><div class="opt-text">to live</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[26]"><div class="expl-label">✅ D – to live</div><div class="expl-text">Cấu trúc: <strong>a place to V</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q27">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(27)">27</div><div class="q-text">Question 27. I want to move out (27) ____________ the city.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(27, 'A')" (click)="selectOpt(27, 'A')"><div class="opt-label">A</div><div class="opt-text">to</div></div>
-            <div class="option" [ngClass]="getOptionClass(27, 'B')" (click)="selectOpt(27, 'B')"><div class="opt-label">B</div><div class="opt-text">for</div></div>
-            <div class="option" [ngClass]="getOptionClass(27, 'C')" (click)="selectOpt(27, 'C')"><div class="opt-label">C</div><div class="opt-text">of</div></div>
-            <div class="option" [ngClass]="getOptionClass(27, 'D')" (click)="selectOpt(27, 'D')"><div class="opt-label">D</div><div class="opt-text">on</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[27]"><div class="expl-label">✅ C – of</div><div class="expl-text">Cụm cố định: <strong>"move out of"</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q28">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(28)">28</div><div class="q-text">Question 28. There aren't any flats for sale in (28) ____________ small villages near here.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(28, 'A')" (click)="selectOpt(28, 'A')"><div class="opt-label">A</div><div class="opt-text">the</div></div>
-            <div class="option" [ngClass]="getOptionClass(28, 'B')" (click)="selectOpt(28, 'B')"><div class="opt-label">B</div><div class="opt-text">a</div></div>
-            <div class="option" [ngClass]="getOptionClass(28, 'C')" (click)="selectOpt(28, 'C')"><div class="opt-label">C</div><div class="opt-text">an</div></div>
-            <div class="option" [ngClass]="getOptionClass(28, 'D')" (click)="selectOpt(28, 'D')"><div class="opt-label">D</div><div class="opt-text">∅ (không mạo từ)</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[28]"><div class="expl-label">✅ D – ∅</div><div class="expl-text">Danh từ số nhiều chỉ nghĩa chung không cần mạo từ.</div></div>
-        </div>
-        <div class="question-block" id="q29">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(29)">29</div><div class="q-text">Question 29. (29) ____________ I am at college, my mum looks after Nicole.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(29, 'A')" (click)="selectOpt(29, 'A')"><div class="opt-label">A</div><div class="opt-text">Who</div></div>
-            <div class="option" [ngClass]="getOptionClass(29, 'B')" (click)="selectOpt(29, 'B')"><div class="opt-label">B</div><div class="opt-text">Why</div></div>
-            <div class="option" [ngClass]="getOptionClass(29, 'C')" (click)="selectOpt(29, 'C')"><div class="opt-label">C</div><div class="opt-text">When</div></div>
-            <div class="option" [ngClass]="getOptionClass(29, 'D')" (click)="selectOpt(29, 'D')"><div class="opt-label">D</div><div class="opt-text">Therefore</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[29]"><div class="expl-label">✅ C – When</div><div class="expl-text">Liên từ thời gian <strong>When</strong> phù hợp.</div></div>
-        </div>
-        <div class="question-block" id="q30">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(30)">30</div><div class="q-text">Question 30. In the evening, I work as (30) ____________ cleaner.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(30, 'A')" (click)="selectOpt(30, 'A')"><div class="opt-label">A</div><div class="opt-text">an</div></div>
-            <div class="option" [ngClass]="getOptionClass(30, 'B')" (click)="selectOpt(30, 'B')"><div class="opt-label">B</div><div class="opt-text">a</div></div>
-            <div class="option" [ngClass]="getOptionClass(30, 'C')" (click)="selectOpt(30, 'C')"><div class="opt-label">C</div><div class="opt-text">the</div></div>
-            <div class="option" [ngClass]="getOptionClass(30, 'D')" (click)="selectOpt(30, 'D')"><div class="opt-label">D</div><div class="opt-text">∅</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[30]"><div class="expl-label">✅ B – a</div><div class="expl-text">"Cleaner" bắt đầu bằng phụ âm /k/ → dùng mạo từ <strong>a</strong>.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SECTION VIII: READING COMPREHENSION -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN VIII – Đọc hiểu đoạn văn (Câu 31–34)<br>
-          <span class="section-sub">Read the passage and indicate the correct answer.</span>
-        </h2>
-        <span class="section-badge">4 câu</span>
-      </div>
-      <div class="section-body">
-        <div class="passage-wrap">
-          <div class="passage-box">
-            <p>Every year people in many countries learn English. Some of them are young children. Others are teenagers. Many are adults. Some learn at school. Others study by themselves. A few learn English just by hearing the language in films, on television, in the office or among their friends. Most people must work hard to learn English.</p>
-            <p>Why do all these people learn English? It's not difficult to answer this question. Many boys and girls learn English at school because it is one of their subjects. Many adults learn English because it is useful for their work. Teenagers often learn English for their higher studies because some of their books are in English at the college or university. Other people learn English because they want to read newspapers or magazines in English.</p>
-          </div>
-        </div>
-        <div class="question-block" id="q31">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(31)">31</div><div class="q-text">Question 31. According to the passage, who wants to learn English?</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(31, 'A')" (click)="selectOpt(31, 'A')"><div class="opt-label">A</div><div class="opt-text">young children</div></div>
-            <div class="option" [ngClass]="getOptionClass(31, 'B')" (click)="selectOpt(31, 'B')"><div class="opt-label">B</div><div class="opt-text">teenagers</div></div>
-            <div class="option" [ngClass]="getOptionClass(31, 'C')" (click)="selectOpt(31, 'C')"><div class="opt-label">C</div><div class="opt-text">adults</div></div>
-            <div class="option" [ngClass]="getOptionClass(31, 'D')" (click)="selectOpt(31, 'D')"><div class="opt-label">D</div><div class="opt-text">All are correct.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[31]"><div class="expl-label">✅ D – All are correct.</div><div class="expl-text">Đoạn văn đề cập cả trẻ em, thanh thiếu niên và người lớn.</div></div>
-        </div>
-        <div class="question-block" id="q32">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(32)">32</div><div class="q-text">Question 32. In the second part, the word "it" refers to ____________.</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(32, 'A')" (click)="selectOpt(32, 'A')"><div class="opt-label">A</div><div class="opt-text">country</div></div>
-            <div class="option" [ngClass]="getOptionClass(32, 'B')" (click)="selectOpt(32, 'B')"><div class="opt-label">B</div><div class="opt-text">young children</div></div>
-            <div class="option" [ngClass]="getOptionClass(32, 'C')" (click)="selectOpt(32, 'C')"><div class="opt-label">C</div><div class="opt-text">English</div></div>
-            <div class="option" [ngClass]="getOptionClass(32, 'D')" (click)="selectOpt(32, 'D')"><div class="opt-label">D</div><div class="opt-text">question</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[32]"><div class="expl-label">✅ C – English</div><div class="expl-text">"it" trong "it is useful for their work" chỉ về <strong>English</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q33">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(33)">33</div><div class="q-text">Question 33. According to the passage, in what way isn't English learnt?</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(33, 'A')" (click)="selectOpt(33, 'A')"><div class="opt-label">A</div><div class="opt-text">by hearing the language in films</div></div>
-            <div class="option" [ngClass]="getOptionClass(33, 'B')" (click)="selectOpt(33, 'B')"><div class="opt-label">B</div><div class="opt-text">on television</div></div>
-            <div class="option" [ngClass]="getOptionClass(33, 'C')" (click)="selectOpt(33, 'C')"><div class="opt-label">C</div><div class="opt-text">in the office</div></div>
-            <div class="option" [ngClass]="getOptionClass(33, 'D')" (click)="selectOpt(33, 'D')"><div class="opt-label">D</div><div class="opt-text">in newspapers</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[33]"><div class="expl-label">✅ D – in newspapers</div><div class="expl-text">Đoạn văn không đề cập học qua <strong>newspapers</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q34">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(34)">34</div><div class="q-text">Question 34. Which sentence is INCORRECT?</div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(34, 'A')" (click)="selectOpt(34, 'A')"><div class="opt-label">A</div><div class="opt-text">Most people must work hard to learn English.</div></div>
-            <div class="option" [ngClass]="getOptionClass(34, 'B')" (click)="selectOpt(34, 'B')"><div class="opt-label">B</div><div class="opt-text">English is not compulsory at school.</div></div>
-            <div class="option" [ngClass]="getOptionClass(34, 'C')" (click)="selectOpt(34, 'C')"><div class="opt-label">C</div><div class="opt-text">Some of the books are in English at the college or university.</div></div>
-            <div class="option" [ngClass]="getOptionClass(34, 'D')" (click)="selectOpt(34, 'D')"><div class="opt-label">D</div><div class="opt-text">It's not difficult to find the reason why these people learn English.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[34]"><div class="expl-label">✅ B</div><div class="expl-text">Câu B sai vì bài đọc nói tiếng Anh là <strong>một môn học</strong> ở trường.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SECTION IX: SENTENCE TRANSFORMATION -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN IX – Viết lại câu (Câu 35–38)<br>
-          <span class="section-sub">Indicate the sentence closest in meaning to the original.</span>
-        </h2>
-        <span class="section-badge">4 câu</span>
-      </div>
-      <div class="section-body">
-        <div class="question-block" id="q35">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(35)">35</div><div class="q-text">Question 35. <em>"We have never stayed at a better hotel than this."</em></div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(35, 'A')" (click)="selectOpt(35, 'A')"><div class="opt-label">A</div><div class="opt-text">This is the good hotel that I have ever stayed at.</div></div>
-            <div class="option" [ngClass]="getOptionClass(35, 'B')" (click)="selectOpt(35, 'B')"><div class="opt-label">B</div><div class="opt-text">This hotel is as good as the other ones.</div></div>
-            <div class="option" [ngClass]="getOptionClass(35, 'C')" (click)="selectOpt(35, 'C')"><div class="opt-label">C</div><div class="opt-text">This is best hotel that I have ever stayed at.</div></div>
-            <div class="option" [ngClass]="getOptionClass(35, 'D')" (click)="selectOpt(35, 'D')"><div class="opt-label">D</div><div class="opt-text">This is the best hotel that I have ever stayed at.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[35]"><div class="expl-label">✅ D</div><div class="expl-text">Cấu trúc: <strong>the best + N + that + S + have ever + V3</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q36">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(36)">36</div><div class="q-text">Question 36. <em>"I think Da Nang is not so exciting as Ha Noi."</em></div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(36, 'A')" (click)="selectOpt(36, 'A')"><div class="opt-label">A</div><div class="opt-text">I think Hanoi is exciting than Da Nang.</div></div>
-            <div class="option" [ngClass]="getOptionClass(36, 'B')" (click)="selectOpt(36, 'B')"><div class="opt-label">B</div><div class="opt-text">I think Hanoi is as exciting as Da Nang.</div></div>
-            <div class="option" [ngClass]="getOptionClass(36, 'C')" (click)="selectOpt(36, 'C')"><div class="opt-label">C</div><div class="opt-text">I think Hanoi is more exciting than Da Nang.</div></div>
-            <div class="option" [ngClass]="getOptionClass(36, 'D')" (click)="selectOpt(36, 'D')"><div class="opt-label">D</div><div class="opt-text">I think Hanoi is more exciting Da Nang.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[36]"><div class="expl-label">✅ C</div><div class="expl-text">Cấu trúc so sánh hơn: <strong>more exciting than</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q37">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(37)">37</div><div class="q-text">Question 37. <em>"Hoa doesn't prepare for the test carefully, so she gets bad marks."</em></div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(37, 'A')" (click)="selectOpt(37, 'A')"><div class="opt-label">A</div><div class="opt-text">If Hoa prepared for the test carefully, she wouldn't get bad marks.</div></div>
-            <div class="option" [ngClass]="getOptionClass(37, 'B')" (click)="selectOpt(37, 'B')"><div class="opt-label">B</div><div class="opt-text">If Hoa prepare for the test carefully, she would get bad marks.</div></div>
-            <div class="option" [ngClass]="getOptionClass(37, 'C')" (click)="selectOpt(37, 'C')"><div class="opt-label">C</div><div class="opt-text">If Hoa prepared for the test carefully, she wouldn't get bad marks.</div></div>
-            <div class="option" [ngClass]="getOptionClass(37, 'D')" (click)="selectOpt(37, 'D')"><div class="opt-label">D</div><div class="opt-text">If Hoa prepared for the test carefully, she would get bad marks.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[37]"><div class="expl-label">✅ A</div><div class="expl-text">Điều kiện loại 2: <strong>If + V-ed, would + not + V</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q38">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(38)">38</div><div class="q-text">Question 38. <em>"Our city has five big supermarkets."</em></div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(38, 'A')" (click)="selectOpt(38, 'A')"><div class="opt-label">A</div><div class="opt-text">There are five big supermarkets in our city.</div></div>
-            <div class="option" [ngClass]="getOptionClass(38, 'B')" (click)="selectOpt(38, 'B')"><div class="opt-label">B</div><div class="opt-text">There is five big supermarkets in our city.</div></div>
-            <div class="option" [ngClass]="getOptionClass(38, 'C')" (click)="selectOpt(38, 'C')"><div class="opt-label">C</div><div class="opt-text">There be five big supermarkets in our city.</div></div>
-            <div class="option" [ngClass]="getOptionClass(38, 'D')" (click)="selectOpt(38, 'D')"><div class="opt-label">D</div><div class="opt-text">There will be five big supermarkets in our city.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[38]"><div class="expl-label">✅ A</div><div class="expl-text">Số nhiều → <strong>There are</strong>.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SECTION X: BUILD SENTENCES -->
-    <div class="section-group">
-      <div class="section-header">
-        <h2>PHẦN X – Viết câu từ gợi ý (Câu 39–40)<br>
-          <span class="section-sub">Indicate the sentence best written from the words/phrases given.</span>
-        </h2>
-        <span class="section-badge">2 câu</span>
-      </div>
-      <div class="section-body">
-        <div class="question-block" id="q39">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(39)">39</div><div class="q-text">Question 39. <em>People / thought / story / written / the / princess / herself.</em></div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(39, 'A')" (click)="selectOpt(39, 'A')"><div class="opt-label">A</div><div class="opt-text">People thought the book written by the princess herself.</div></div>
-            <div class="option" [ngClass]="getOptionClass(39, 'B')" (click)="selectOpt(39, 'B')"><div class="opt-label">B</div><div class="opt-text">People thought the book was written at the princess herself.</div></div>
-            <div class="option" [ngClass]="getOptionClass(39, 'C')" (click)="selectOpt(39, 'C')"><div class="opt-label">C</div><div class="opt-text">People thought the story was written under the princess herself.</div></div>
-            <div class="option" [ngClass]="getOptionClass(39, 'D')" (click)="selectOpt(39, 'D')"><div class="opt-label">D</div><div class="opt-text">People thought the story was written by the princess herself.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[39]"><div class="expl-label">✅ D</div><div class="expl-text">Câu bị động: <strong>was written by</strong>.</div></div>
-        </div>
-        <div class="question-block" id="q40">
-          <div class="q-header"><div class="q-num" [ngClass]="getQNumClass(40)">40</div><div class="q-text">Question 40. <em>It / rain / hard / the / farmer / not / work / fields.</em></div></div>
-          <div class="options">
-            <div class="option" [ngClass]="getOptionClass(40, 'A')" (click)="selectOpt(40, 'A')"><div class="opt-label">A</div><div class="opt-text">It is raining so hard that the farmers cannot work in the fields.</div></div>
-            <div class="option" [ngClass]="getOptionClass(40, 'B')" (click)="selectOpt(40, 'B')"><div class="opt-label">B</div><div class="opt-text">It was raining so hard that the farmers could work in the fields.</div></div>
-            <div class="option" [ngClass]="getOptionClass(40, 'C')" (click)="selectOpt(40, 'C')"><div class="opt-label">C</div><div class="opt-text">It was raining so hard that the farmers could not work in the fields.</div></div>
-            <div class="option" [ngClass]="getOptionClass(40, 'D')" (click)="selectOpt(40, 'D')"><div class="opt-label">D</div><div class="opt-text">It was raining so but that the farmers could work in the fields.</div></div>
-          </div>
-          <div class="explanation" [class.show]="explVisible[40]"><div class="expl-label">✅ C</div><div class="expl-text">Cấu trúc <strong>so...that</strong>, quá khứ tiếp diễn "was raining".</div></div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- end exam-wrapper -->
-
-  <!-- ===== RIGHT: SIDEBAR ===== -->
+  </div>
+  <!-- RIGHT: SIDEBAR -->
   <div class="exam-sidebar">
-
     <!-- TIMER CARD -->
     <div class="timer-card">
       <div class="timer-header">
-        <h3>⏱ Đồng hồ đếm ngược</h3>
-        <div class="timer-sub">Thời gian làm bài: 45 phút</div>
+        <h3>Đồng hồ đếm ngược</h3>
+        <div class="timer-sub">Thời gian làm bài: {{ durationMinutes }} phút</div>
       </div>
       <div class="timer-body">
         <div class="timer-display">
@@ -760,26 +118,21 @@
         </div>
         <div class="timer-btns">
           <button class="t-btn t-btn-pause" [class.saved]="savedProgress" (click)="onSave()">{{ saveLabel }}</button>
-          <button class="t-btn t-btn-submit" (click)="submitExam()">✅ Nộp bài</button>
+          <button class="t-btn t-btn-submit" (click)="submitExam()">Nộp bài</button>
         </div>
       </div>
     </div>
-
     <!-- PROGRESS CARD -->
     <div class="progress-card">
-      <h3>📊 Tiến độ làm bài</h3>
+      <h3>Tiến độ làm bài</h3>
       <div class="prog-stats">
         <div class="prog-stat ps-answered">
           <div class="prog-num">{{ answeredCount }}</div>
           <div class="prog-lbl">Đã làm</div>
         </div>
-        <div class="prog-stat ps-correct">
-          <div class="prog-num">{{ checked ? correctCount : '–' }}</div>
-          <div class="prog-lbl">Đúng</div>
-        </div>
         <div class="prog-stat ps-remain">
           <div class="prog-num">{{ remainCount }}</div>
-          <div class="prog-lbl">Còn lại</div>
+          <div class="prog-lbl">Chưa làm</div>
         </div>
       </div>
       <div class="prog-bar-wrap">
@@ -790,81 +143,58 @@
       </div>
       <div class="q-nav-grid">
         <button
-          *ngFor="let q of questionNums"
+          *ngFor="let q of questions"
           class="q-nav-btn"
-          [ngClass]="getNavClass(q)"
-          (click)="scrollToQ(q)"
-          [title]="'Câu ' + q">
-          {{ q }}
+          [ngClass]="getNavClass(q.questionId)"
+          (click)="scrollToQ(q.questionId)"
+          [title]="'Câu ' + q.questionNumber">
+          {{ q.questionNumber }}
         </button>
       </div>
-      <div class="nav-legend">
+      <div class="nav-legend" *ngIf="!reviewMode">
         <div class="legend-item"><div class="legend-dot ld-ans"></div>Đã chọn</div>
-        <div class="legend-item"><div class="legend-dot ld-ok"></div>Đúng</div>
-        <div class="legend-item"><div class="legend-dot ld-err"></div>Sai</div>
         <div class="legend-item"><div class="legend-dot ld-emp"></div>Chưa làm</div>
       </div>
-    </div>
-
-    <!-- RESULT CARD -->
-    <div class="result-card" [class.show]="resultVisible">
-      <div class="result-emoji">{{ resultEmoji }}</div>
-      <div class="result-label">KẾT QUẢ BÀI THI</div>
-      <div class="result-score">{{ resultScore }}</div>
-      <div class="result-grade">{{ resultGrade }}</div>
-      <div class="result-breakdown">
-        <div class="rb-item rb-correct">
-          <div class="rb-num">{{ correctCount }}</div>
-          <div class="rb-lbl">✅ Câu đúng</div>
-        </div>
-        <div class="rb-item rb-wrong">
-          <div class="rb-num">{{ wrongCount }}</div>
-          <div class="rb-lbl">❌ Câu sai</div>
-        </div>
+      <div class="nav-legend" *ngIf="reviewMode">
+        <div class="legend-item"><div class="legend-dot ld-ok"></div>Đúng</div>
+        <div class="legend-item"><div class="legend-dot ld-err"></div>Sai</div>
       </div>
     </div>
-
-    <!-- ACTION CARD -->
-    <div class="action-card">
-      <h3>⚡ Thao tác nhanh</h3>
-      <button class="act-btn ab-check" (click)="checkAllAnswers()">✅ Kiểm tra đáp án</button>
-      <button class="act-btn ab-hint"  (click)="toggleAllExplanations()">
-        {{ showAllExpls ? '🙈 Ẩn giải thích' : '💡 Xem tất cả giải thích' }}
-      </button>
-      <button class="act-btn ab-reset" (click)="resetExam()">🔄 Làm lại từ đầu</button>
-    </div>
-
-  </div><!-- end sidebar -->
-
-</div><!-- end exam-main -->
-
-
-<!-- SCORE MODAL — dùng *ngIf thay [class.show] để Angular kiểm soát DOM hoàn toàn -->
+  </div>
+</div>
+<!-- EXAM SUBMISSION MODAL -->
 <div class="modal-overlay" *ngIf="modalVisible" style="display:flex">
   <div class="modal-box">
-    <button class="modal-close" (click)="closeModal()">✕</button>
-    <div class="modal-emoji">{{ resultEmoji }}</div>
-    <div class="modal-title">{{ resultGrade }}</div>
-    <div class="modal-score">{{ resultScore }}</div>
-    <div class="modal-sub">{{ modalSub }}</div>
-    <div class="modal-stats">
-      <div class="ms-item ms-correct">
-        <div class="ms-num">{{ correctCount }}</div>
-        <div class="ms-lbl">✅ Đúng</div>
-      </div>
-      <div class="ms-item ms-wrong">
-        <div class="ms-num">{{ wrongCount }}</div>
-        <div class="ms-lbl">❌ Sai</div>
-      </div>
-      <div class="ms-item ms-skip">
-        <div class="ms-num">{{ skipCount }}</div>
-        <div class="ms-lbl">⬜ Bỏ qua</div>
-      </div>
-    </div>
-    <div class="modal-btns">
-      <!-- routerLink: Angular xử lý navigation trực tiếp, không cần TS method -->
-      <a class="mb-primary" href="/ai-analysis">🤖 AI Phân tích</a>
-      <button class="mb-outline" (click)="closeModal(); resetExam()">🔄 Làm lại</button>
-    </div>
+    <button class="modal-close" (click)="modalVisible = false" aria-label="Đóng">×</button>
+    <ng-container *ngIf="submitting; else resultModal">
+      <div class="modal-emoji">...</div>
+      <div class="modal-title">Đang nộp bài...</div>
+      <div class="modal-sub">Vui lòng chờ một chút, hệ thống đang xử lý bài làm của bạn</div>
+    </ng-container>
+    <ng-template #resultModal>
+      <ng-container *ngIf="scoringErrorMessage; else scoredModal">
+        <div class="modal-emoji">!</div>
+        <div class="modal-title">Chưa chấm điểm được</div>
+        <div class="modal-sub">{{ scoringErrorMessage }}</div>
+        <div class="modal-btns">
+          <button type="button" class="t-btn t-btn-submit" (click)="modalVisible = false">Tiếp tục làm bài</button>
+        </div>
+      </ng-container>
+      <ng-template #scoredModal>
+        <div class="modal-emoji">✓</div>
+        <div class="modal-title">Đã chấm điểm xong</div>
+        <div class="modal-score">{{ scoreDisplay }}/10</div>
+        <div class="modal-sub">Đúng {{ correctCount }}/{{ totalQuestions }} câu</div>
+        <div class="modal-stats">
+          <div><strong>{{ correctCount }}</strong><span>Đúng</span></div>
+          <div><strong>{{ wrongCount }}</strong><span>Sai</span></div>
+          <div><strong>{{ skippedCount }}</strong><span>Bỏ qua</span></div>
+        </div>
+        <div class="modal-btns">
+          <button type="button" class="t-btn t-btn-submit" (click)="confirmResult()">Xem đáp án</button>
+          <button type="button" class="t-btn t-btn-pause" (click)="resetExam()">Làm lại</button>
+        </div>
+      </ng-template>
+    </ng-template>
   </div>
 </div>

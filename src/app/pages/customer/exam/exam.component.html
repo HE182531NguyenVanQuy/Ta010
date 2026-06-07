@@ -1,6 +1,6 @@
 <div class="breadcrumb-bar">
   <div class="breadcrumb-inner">
-    🏠 <a routerLink="/">Trang chủ</a> <span>›</span> <span class="bc-cur">Đề thi</span>
+    <a routerLink="/">Trang chủ</a> <span>›</span> <span class="bc-cur">Đề thi</span>
   </div>
 </div>
 
@@ -10,232 +10,255 @@
   <div class="page-hero-inner fade-up">
     <div class="hero-badge">
       <div class="hero-badge-dot"></div>
-      Cập nhật mới nhất năm 2026
+      Kho đề thi trắc nghiệm
     </div>
-    <h1>Kho Đề Thi <span>Tổng Hợp Vào Lớp 10</span></h1>
-    <p>
-      Bộ sưu tập đề thi tuyển sinh vào lớp 10 đầy đủ nhất – chuẩn cấu trúc 2026 – kèm đáp án giải thích chi tiết từng câu.
-    </p>
+    <h1>Kho Đề Thi <span>Vào Lớp 10</span></h1>
+    <p>Chọn đề phù hợp và bắt đầu luyện tập ngay.</p>
     <div class="hero-stats-row">
-      <div><div class="hs-num">300+</div><div class="hs-label">Đề thi có sẵn</div></div>
-      <div><div class="hs-num">100%</div><div class="hs-label">Có đáp án</div></div>
-      <div><div class="hs-num">2023–2026</div><div class="hs-label">Năm học</div></div>
-      <div><div class="hs-num">600k+</div><div class="hs-label">Lượt làm bài</div></div>
+      <div><div class="hs-num">{{ catalogTotalCount }}</div><div class="hs-label">Tổng đề thi</div></div>
+      <div><div class="hs-num">{{ examCardsMain.length }}</div><div class="hs-label">Đề trên trang</div></div>
+      @if (lastPage > 1) {
+        <div><div class="hs-num">{{ currentPage }}/{{ lastPage }}</div><div class="hs-label">Trang</div></div>
+      }
     </div>
   </div>
 </section>
 
 <div class="page-main">
-  <div class="two-col-layout">
-    <aside class="sidebar">
-      <div class="sidebar-panel fade-up">
-        <div class="panel-title">🔍 Tìm kiếm nhanh</div>
-        <div class="sidebar-search">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Tìm kiếm..." aria-label="Tìm kiếm" />
+  <div class="two-col-layout" [class.no-sidebar]="!showSidebar">
+    @if (showSidebar) {
+      <aside class="sidebar">
+        <div class="sidebar-panel fade-up">
+          <div class="panel-title">Tìm kiếm nhanh</div>
+          <div class="sidebar-search">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              [value]="searchQuery"
+              placeholder="Tìm kiếm đề thi..."
+              aria-label="Tìm kiếm đề thi"
+              (input)="onSearchInput($event)" />
+          </div>
         </div>
-      </div>
-      <div class="sidebar-panel fade-up d1">
-        <div class="panel-title">📋 Loại đề thi</div>
-        <ul class="sfl">
-          @for (f of typeFilters; track f.id) {
-            <li
-              class="sfl-item"
-              [class.active]="activeType === f.id"
-              (click)="setType(f.id)"
-              role="button"
-              tabindex="0"
-            >
-              {{ f.label }} <span class="sfl-count">{{ f.count }}</span>
-            </li>
+        @if (showTypeFilter) {
+          <div class="sidebar-panel fade-up d1">
+            <div class="panel-title">Loại đề thi</div>
+            <ul class="sfl">
+              @for (f of typeFilters; track f.id) {
+                <li
+                  class="sfl-item"
+                  [class.active]="activeType === f.id"
+                  (click)="setType(f.id)"
+                  role="button"
+                  tabindex="0"
+                >
+                  {{ f.label }} <span class="sfl-count">{{ f.count }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+        @if (showYearFilter) {
+          <div class="sidebar-panel fade-up d1">
+            <div class="panel-title">Năm học</div>
+            <div class="chip-group">
+              @for (y of yearChips; track y.id) {
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.active]="activeYear === y.id"
+                  (click)="setYear(y.id)"
+                >
+                  {{ y.label }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+        @if (showLevelFilter) {
+          <div class="sidebar-panel fade-up d1">
+            <div class="panel-title">Độ khó</div>
+            <ul class="sfl">
+              @for (d of difficultyFilters; track d.id) {
+                <li
+                  class="sfl-item"
+                  [class.active]="activeDifficulty === d.id"
+                  (click)="setDifficulty(d.id)"
+                  role="button"
+                  tabindex="0"
+                >
+                  {{ d.label }} <span class="sfl-count">{{ d.count }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </aside>
+    }
+
+    <div class="exam-content">
+      @if (!loading && !errorMessage && examCardsMain.length > 0) {
+        <div class="stats-banner fade-up">
+          <div class="stat-item">
+            <div class="stat-icon">📚</div>
+            <div class="stat-num">{{ catalogTotalCount }}</div>
+            <div class="stat-label">Tổng đề thi</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">📝</div>
+            <div class="stat-num">{{ examCardsMain.length }}</div>
+            <div class="stat-label">Đề trên trang</div>
+          </div>
+          @if (lastPage > 1) {
+            <div class="stat-item">
+              <div class="stat-icon">📄</div>
+              <div class="stat-num">{{ currentPage }}/{{ lastPage }}</div>
+              <div class="stat-label">Trang</div>
+            </div>
           }
-        </ul>
-      </div>
-      <div class="sidebar-panel fade-up d1">
-        <div class="panel-title">📅 Năm học</div>
-        <div class="chip-group">
-          @for (y of yearChips; track y.id) {
+        </div>
+      }
+
+      @if (showTypeFilter && tabs.length > 1) {
+        <div class="tab-bar fade-up">
+          @for (t of tabs; track t.id) {
             <button
               type="button"
-              class="filter-chip"
-              [class.active]="activeYear === y.id"
-              (click)="setYear(y.id)"
+              class="tab"
+              [class.active]="activeTab === t.id"
+              (click)="setTab(t.id)"
             >
-              {{ y.label }}
+              {{ t.label }}
             </button>
           }
         </div>
-      </div>
-      <div class="sidebar-panel fade-up d1">
-        <div class="panel-title">🎯 Độ khó</div>
-        <ul class="sfl">
-          @for (d of difficultyFilters; track d.id) {
-            <li
-              class="sfl-item"
-              [class.active]="activeDifficulty === d.id"
-              (click)="setDifficulty(d.id)"
-              role="button"
-              tabindex="0"
-            >
-              {{ d.label }} <span class="sfl-count">{{ d.count }}</span>
-            </li>
-          }
-        </ul>
-      </div>
-    </aside>
-
-    <div class="exam-content">
-      <div class="stats-banner fade-up">
-        <div class="stat-item"><div class="stat-icon">📝</div><div class="stat-num">300<span>+</span></div><div class="stat-label">Tổng đề thi</div></div>
-        <div class="stat-item"><div class="stat-icon">✅</div><div class="stat-num">100<span>%</span></div><div class="stat-label">Có đáp án chi tiết</div></div>
-        <div class="stat-item"><div class="stat-icon">🔓</div><div class="stat-num">90<span>+</span></div><div class="stat-label">Đề miễn phí</div></div>
-        <div class="stat-item"><div class="stat-icon">👥</div><div class="stat-num">600<span>k+</span></div><div class="stat-label">Lượt làm bài</div></div>
-      </div>
-
-      <div class="exam-notice-bar fade-up">
-        <span class="exam-notice-emoji">🔥</span>
-        <div class="exam-notice-text">
-          <div class="exam-notice-title">Bộ đề thi thử tổng hợp năm 2026 vừa cập nhật!</div>
-          <div class="exam-notice-desc">Chuẩn cấu trúc thi tuyển sinh vào lớp 10 – Có đáp án giải thích từng câu</div>
-        </div>
-        <button type="button" class="exam-notice-btn">Xem ngay →</button>
-      </div>
-
-      <div class="tab-bar fade-up">
-        @for (t of tabs; track t.id) {
-          <button
-            type="button"
-            class="tab"
-            [class.active]="activeTab === t.id"
-            (click)="setTab(t.id)"
-          >
-            {{ t.label }}
-          </button>
-        }
-      </div>
+      }
 
       <div class="toolbar fade-up">
-        <div class="result-count">Hiển thị <span>300+</span> đề thi</div>
+        <div class="result-count">Hiển thị <span>{{ examCardsMain.length }}</span> / {{ totalCount }} đề thi</div>
         <div class="toolbar-right">
-          <select class="sort-select" aria-label="Sắp xếp">
-            <option>Mới nhất</option>
-            <option>Nhiều lượt làm nhất</option>
-            <option>Khó nhất</option>
-            <option>Dễ nhất</option>
-          </select>
-          <div class="view-toggle">
-            <button type="button" class="view-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')" title="Dạng lưới">⊞</button>
-            <button type="button" class="view-btn" [class.active]="viewMode === 'list'" (click)="setView('list')" title="Dạng danh sách">☰</button>
+          @if (sortOptions.length > 0) {
+            <select
+              class="sort-select"
+              aria-label="Sắp xếp"
+              [value]="activeSort"
+              (change)="onSortChange($event)">
+              @for (option of sortOptions; track option.id) {
+                <option [value]="option.id">{{ option.label }}</option>
+              }
+            </select>
+          }
+          <div class="view-toggle" role="group" aria-label="Chế độ hiển thị">
+            <button
+              type="button"
+              class="view-btn"
+              [class.active]="viewMode === 'grid'"
+              [attr.aria-pressed]="viewMode === 'grid'"
+              (click)="setView('grid')"
+              title="Dạng lưới">
+              <span class="view-btn-icon" aria-hidden="true">⊞</span>
+            </button>
+            <button
+              type="button"
+              class="view-btn"
+              [class.active]="viewMode === 'list'"
+              [attr.aria-pressed]="viewMode === 'list'"
+              (click)="setView('list')"
+              title="Dạng dòng">
+              <span class="view-btn-icon" aria-hidden="true">☰</span>
+            </button>
           </div>
         </div>
       </div>
 
       <div class="section-title-row fade-up">
-        <h2 class="section-title">🔥 Đề thi thử tổng hợp <span>năm 2026</span></h2>
-        <a routerLink="/de-thi" class="view-all">Xem tất cả →</a>
+        <h2 class="section-title">Danh sách <span>đề thi</span></h2>
+        <button
+          type="button"
+          class="btn-action btn-action--secondary"
+          (click)="loadExams()"
+          [disabled]="loading">
+          {{ loading ? 'Đang tải...' : 'Tải lại' }}
+        </button>
       </div>
-      <div class="exam-cards fade-up">
-        @for (exam of examCardsMain; track exam.id) {
-          <div class="exam-card">
-            <div class="exam-card-cover" [ngClass]="exam.cover">
-              <div class="cover-pattern"></div>
-              <div class="cover-label">2026</div>
-              <span class="exam-card-tag" [ngClass]="exam.tagClass">{{ exam.tag }}</span>
-            </div>
-            <div class="exam-card-body">
-              <div class="exam-card-title">{{ exam.title }}</div>
-              <div class="exam-card-meta">
-                <span>📝 {{ exam.questions }} câu</span>
-                <span>⏱ {{ exam.duration }} phút</span>
-                <span>👁 {{ exam.views }}</span>
-              </div>
-              <div class="exam-card-progress">
-                <div class="progress-info"><span>Tiến độ</span><span>{{ exam.progress }}%</span></div>
-                <div class="progress-bar"><div class="progress-fill" [style.width.%]="exam.progress"></div></div>
-              </div>
-              <div class="exam-card-footer">
-                <div class="exam-card-difficulty" [ngClass]="exam.difficultyClass">
-                  <div class="diff-dot"></div>
-                  {{ exam.difficulty }}
-                </div>
-                <button type="button" class="btn-start">{{ exam.action }}</button>
-              </div>
-            </div>
+
+      @if (loading) {
+        <div class="exam-notice-bar fade-up">
+          <span class="exam-notice-emoji">⏳</span>
+          <div class="exam-notice-text">
+            <div class="exam-notice-title">Đang tải danh sách đề thi...</div>
+            <div class="exam-notice-desc">Vui lòng chờ một chút.</div>
           </div>
-        }
-      </div>
-
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">📚 Đề thi theo <span>chuyên đề</span></h2>
-        <a href="#" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="exam-cards fade-up d1">
-        @for (exam of examCardsChuyenDe; track exam.title) {
-          <div class="exam-card">
-            <div class="exam-card-cover" [ngClass]="exam.cover">
-              <div class="cover-pattern"></div>
-              <div class="cover-label">{{ exam.coverLabel }}</div>
-              <span class="exam-card-tag" [ngClass]="exam.tagClass">{{ exam.tag }}</span>
-            </div>
-            <div class="exam-card-body">
-              <div class="exam-card-title">{{ exam.title }}</div>
-              <div class="exam-card-meta">
-                <span>📝 {{ exam.questions }} câu</span>
-                <span>⏱ {{ exam.duration }} phút</span>
-                <span>👁 {{ exam.views }}</span>
-              </div>
-              <div class="exam-card-progress">
-                <div class="progress-info"><span>Tiến độ</span><span>{{ exam.progress }}%</span></div>
-                <div class="progress-bar"><div class="progress-fill" [style.width.%]="exam.progress"></div></div>
-              </div>
-              <div class="exam-card-footer">
-                <div class="exam-card-difficulty" [ngClass]="exam.difficultyClass">
-                  <div class="diff-dot"></div>
-                  {{ exam.difficulty }}
-                </div>
-                <button type="button" class="btn-start">{{ exam.action }}</button>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">🎯 Luyện theo <span>chủ điểm ngữ pháp</span></h2>
-        <a routerLink="/ngu-phap" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="topics-grid fade-up d1">
-        @for (topic of topics; track topic.name) {
-          <div class="topic-card">
-            <div class="topic-emoji">{{ topic.emoji }}</div>
-            <div>
-              <div class="topic-name">{{ topic.name }}</div>
-              <div class="topic-count">{{ topic.count }}</div>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="pagination fade-up">
-        <button type="button" class="pg-btn" (click)="setPage(currentPage - 1)" [disabled]="currentPage <= 1">‹</button>
-        @for (p of pages; track p) {
-          <button type="button" class="pg-btn" [class.active]="currentPage === p" (click)="setPage(p)">{{ p }}</button>
-        }
-        <span class="pg-ellipsis">...</span>
-        <button type="button" class="pg-btn" [class.active]="currentPage === lastPage" (click)="setPage(lastPage)">{{ lastPage }}</button>
-        <button type="button" class="pg-btn" (click)="setPage(currentPage + 1)" [disabled]="currentPage >= lastPage">›</button>
-      </div>
-
-      <div class="cta-section fade-up">
-        <div class="cta-emoji">🎓</div>
-        <h2>Bắt đầu ôn luyện <span>hoàn toàn miễn phí!</span></h2>
-        <p>Đăng ký ngay để truy cập 300+ đề thi và đáp án chi tiết. Không cần thẻ tín dụng.</p>
-        <div class="cta-btns">
-          <button type="button" class="btn-cta-primary">🚀 Tạo tài khoản miễn phí</button>
-          <button type="button" class="btn-cta-outline">📖 Xem đề thi ngay</button>
         </div>
-        <div class="cta-note">✅ Miễn phí mãi mãi &nbsp;·&nbsp; ✅ Không quảng cáo &nbsp;·&nbsp; ✅ 300+ đề thi</div>
+      } @else if (errorMessage) {
+        <div class="exam-notice-bar fade-up">
+          <span class="exam-notice-emoji">!</span>
+          <div class="exam-notice-text">
+            <div class="exam-notice-title">{{ errorMessage }}</div>
+            <div class="exam-notice-desc">Hãy thử tải lại trang hoặc quay lại sau.</div>
+          </div>
+          <button
+            type="button"
+            class="btn-action btn-action--primary"
+            (click)="loadExams()"
+            [disabled]="loading">
+            {{ loading ? 'Đang tải...' : 'Thử lại' }}
+          </button>
+        </div>
+      } @else if (examCardsMain.length === 0) {
+        <div class="exam-notice-bar fade-up">
+          <span class="exam-notice-emoji">{{ hasActiveFilters ? '🔍' : '📭' }}</span>
+          <div class="exam-notice-text">
+            @if (hasActiveFilters) {
+              <div class="exam-notice-title">Không tìm thấy đề thi phù hợp</div>
+              <div class="exam-notice-desc">Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
+            } @else {
+              <div class="exam-notice-title">Chưa có đề thi nào</div>
+              <div class="exam-notice-desc">Hiện chưa có đề thi để hiển thị. Vui lòng quay lại sau.</div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="exam-cards fade-up" [class.list-mode]="viewMode === 'list'">
+        @for (exam of examCardsMain; track exam.examId) {
+          <div class="exam-card">
+            <div class="exam-card-cover" [ngClass]="exam.cover">
+              <div class="cover-pattern"></div>
+              <span class="exam-card-tag" [ngClass]="exam.tagClass">{{ exam.tag }}</span>
+            </div>
+            <div class="exam-card-body">
+              <div class="exam-card-title">{{ exam.title }}</div>
+              <div class="exam-card-meta">
+                <span>{{ exam.questionsCount }} câu</span>
+                <span>{{ exam.durationTime }} phút</span>
+                <span>{{ exam.viewsCount }} lượt xem</span>
+              </div>
+              <div class="exam-card-footer">
+                <div class="exam-card-difficulty" [ngClass]="exam.levelClass">
+                  <div class="diff-dot"></div>
+                  {{ exam.level }}
+                </div>
+                <a [routerLink]="['/lam-bai']" [queryParams]="{ examId: exam.examId }" class="btn-start">{{ exam.action }}</a>
+              </div>
+            </div>
+          </div>
+        }
       </div>
+
+      @if (lastPage > 1) {
+        <div class="pagination fade-up">
+          <button type="button" class="pg-btn" (click)="setPage(currentPage - 1)" [disabled]="currentPage <= 1" aria-label="Trang trước">‹</button>
+          @for (p of pages; track p) {
+            <button type="button" class="pg-btn" [class.active]="currentPage === p" (click)="setPage(p)">{{ p }}</button>
+          }
+          @if (lastPage > pages.length) {
+            <span class="pg-ellipsis">...</span>
+            <button type="button" class="pg-btn" [class.active]="currentPage === lastPage" (click)="setPage(lastPage)">{{ lastPage }}</button>
+          }
+          <button type="button" class="pg-btn" (click)="setPage(currentPage + 1)" [disabled]="currentPage >= lastPage" aria-label="Trang sau">›</button>
+        </div>
+      }
     </div>
   </div>
 </div>
