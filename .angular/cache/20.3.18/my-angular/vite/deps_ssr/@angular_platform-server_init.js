@@ -16521,7 +16521,7 @@ export {
 
 @angular/platform-server/fesm2022/init.mjs:
   (**
-   * @license Angular v20.3.17
+   * @license Angular v20.3.18
    * (c) 2010-2025 Google LLC. https://angular.dev/
    * License: MIT
    *)

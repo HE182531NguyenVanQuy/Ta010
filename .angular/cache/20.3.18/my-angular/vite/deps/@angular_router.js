@@ -1,7 +1,7 @@
 import {
   Title
-} from "./chunk-UZCIBXHK.js";
-import "./chunk-LT6OKPNK.js";
+} from "./chunk-GWDX2JYO.js";
+import "./chunk-V7TXLJGY.js";
 import {
   HashLocationStrategy,
   LOCATION_INITIALIZED,
@@ -9,8 +9,8 @@ import {
   LocationStrategy,
   PathLocationStrategy,
   ViewportScroller
-} from "./chunk-EXQSW3KD.js";
-import "./chunk-R7NYSOI5.js";
+} from "./chunk-ARAY24G7.js";
+import "./chunk-6UNWJBON.js";
 import {
   APP_BOOTSTRAP_LISTENER,
   ApplicationRef,
@@ -63,7 +63,7 @@ import {
   ɵɵloadQuery,
   ɵɵqueryRefresh,
   ɵɵsanitizeUrlOrResourceUrl
-} from "./chunk-ZPKRIHAE.js";
+} from "./chunk-DYYYMJXV.js";
 import {
   DOCUMENT,
   DestroyRef,
@@ -86,12 +86,12 @@ import {
   ɵɵdefineInjectable,
   ɵɵdefineInjector,
   ɵɵinject
-} from "./chunk-Q37F7GEO.js";
+} from "./chunk-WI2XZW2V.js";
+import "./chunk-JRFR6BLO.js";
 import {
   defer,
   isObservable
-} from "./chunk-53B2AV33.js";
-import "./chunk-D5HPMNDN.js";
+} from "./chunk-HWYXSU2G.js";
 import {
   BehaviorSubject,
   ConnectableObservable,
@@ -124,7 +124,7 @@ import {
   takeUntil,
   tap,
   throwError
-} from "./chunk-W3LQWAEF.js";
+} from "./chunk-MARUHEWW.js";
 import {
   __spreadProps,
   __spreadValues
@@ -6046,7 +6046,7 @@ function mapToCanDeactivate(providers) {
 function mapToResolve(provider) {
   return (...params) => inject(provider).resolve(...params);
 }
-var VERSION = new Version("20.3.17");
+var VERSION = new Version("20.3.18");
 export {
   ActivatedRoute,
   ActivatedRouteSnapshot,
@@ -6133,7 +6133,7 @@ export {
 @angular/router/fesm2022/router_module.mjs:
 @angular/router/fesm2022/router.mjs:
   (**
-   * @license Angular v20.3.17
+   * @license Angular v20.3.18
    * (c) 2010-2025 Google LLC. https://angular.dev/
    * License: MIT
    *)

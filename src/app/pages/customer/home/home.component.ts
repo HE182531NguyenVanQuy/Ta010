@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { NgClass, CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ExamService } from '../../../services/exam.service';
-import { BlogService } from '../../../services/blog.service';
 import { SignalrService, LeaderboardItem } from '../../../services/signalr.service';
 
 interface ExamCard {
@@ -60,7 +59,6 @@ interface TestimonialItem {
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private examService = inject(ExamService);
-  private blogService = inject(BlogService);
   private signalrService = inject(SignalrService);
 
   private leaderboardSub: Subscription | null = null;
@@ -116,9 +114,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     // 2. Load Real Exams List (6 items)
     this.loadExams();
 
-    // 3. Load Real Blogs List (4 items)
-    this.loadBlogs();
-
     // 4. Listen to SignalR dynamic leaderboard updates
     this.leaderboardSub = this.signalrService.leaderboard$.subscribe({
       next: (data: LeaderboardItem[]) => {
@@ -159,24 +154,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadBlogs(): void {
-    this.blogService.getBlogs(1, 4).subscribe({
-      next: (blogs) => {
-        if (blogs && blogs.length > 0) {
-          this.blogItems = blogs.map((b, idx) => ({
-            id: b.blogPostId,
-            title: b.title,
-            meta: b.meta ?? `👁 ${b.viewsCount ?? 0} lượt xem`,
-            emoji: idx % 4 === 0 ? '📰' : idx % 4 === 1 ? '💡' : idx % 4 === 2 ? '📚' : '🎯',
-            thumbClass: idx % 4 === 0 ? 'blog-thumb-sky' : idx % 4 === 1 ? 'blog-thumb-amber' : idx % 4 === 2 ? 'blog-thumb-green' : 'blog-thumb-purple'
-          }));
-        }
-      },
-      error: (err) => {
-        console.error('Failed to load blogs from API.', err);
-      }
-    });
-  }
+  
 
   private updateLeaderboardUI(data: LeaderboardItem[]): void {
     if (!data || data.length === 0) return;
