@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment.prod';
 
-const API_BASE = 'https://localhost:7103/api';
+const API_BASE = (environment.apiUrl ?? 'https://localhost:7103/api').replace(/\/+$|\/$/g, '');
 
 // Mock data for development/fallback
 const MOCK_EXAMS = [
@@ -296,6 +297,8 @@ export class ExamService {
       nodeOptions.agent = new https.Agent({
         rejectUnauthorized: false
       });
+
+      return fetch(url, nodeOptions);
     }
 
     return fetch(url, options);
