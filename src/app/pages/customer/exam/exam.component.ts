@@ -1,10 +1,66 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { NgClass, CommonModule } from '@angular/common';
-import { ExamService, ExamResponse } from '../../../services/exam.service';
-import { PaymentService, PackageResponse, UserPackageResponse, CheckoutResponse } from '../../../services/payment.service';
-import { NotificationService } from '../../../services/notification.service';
+import { Subscription, firstValueFrom } from 'rxjs';
+import { ExamService } from '../../../services/exam.service';
+import { PaymentService, UserPackageResponse, PackageResponse } from '../../../services/payment.service';
 import { AuthService } from '../../../services/auth.service';
+
+interface ExamCard {
+  examId: string;
+  title: string;
+  description: string;
+  questionsCount: number;
+  durationTime: number;
+  viewsCount: string;
+  level: string;
+  levelClass: string;
+  action: string;
+  cover: string;
+  tag: string;
+  tagClass: string;
+}
+
+interface Exam {
+  examId: string;
+  title: string;
+  description?: string;
+  questionsCount?: number;
+  durationTime: number;
+  level?: string;
+  year?: number;
+  examType?: string;
+  viewsCount?: number;
+  attemptsCount?: number;
+  statusCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface FilterOption {
+  id: string;
+  label: string;
+  count: number;
+}
+
+interface SortOption {
+  id: string;
+  label: string;
+}
+
+type SortId =
+  | 'newest'
+  | 'oldest'
+  | 'title-asc'
+  | 'title-desc'
+  | 'views-desc'
+  | 'attempts-desc'
+  | 'questions-desc'
+  | 'questions-asc'
+  | 'duration-desc'
+  | 'duration-asc'
+  | 'year-desc'
+  | 'year-asc';
 
 @Component({
   selector: 'app-exam',
@@ -12,238 +68,714 @@ import { AuthService } from '../../../services/auth.service';
   imports: [RouterLink, NgClass, CommonModule],
   templateUrl: './exam.component.html',
   styleUrl: './exam.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExamComponent implements OnInit {
-  private examService = inject(ExamService);
-  private paymentService = inject(PaymentService);
-  private notificationService = inject(NotificationService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-
-  // States
-  hasActivePackage = false;
-  activeUserPkg: UserPackageResponse | null = null;
-  exams: ExamResponse[] = [];
-  packages: PackageResponse[] = [];
-
-  // Payment States
-  selectedPackage: PackageResponse | null = null;
-  isProcessingPayment = false;
-
-  // Tabs & filters
+export class ExamComponent implements OnInit, OnDestroy {
   activeTab = 'all';
   activeYear = 'all';
   activeDifficulty = 'all';
   activeType = 'all';
   viewMode: 'grid' | 'list' = 'grid';
+  searchQuery = '';
+  activeSort: SortId = 'title-asc';
+
   currentPage = 1;
-
-  tabs = [
-    { id: 'all', label: 'Tất cả' },
-    { id: 'thu', label: 'Đề thi thử' },
-    { id: 'chinh-thuc', label: 'Đề chính thức' },
-  ];
-
-  yearChips = [
-    { id: 'all', label: 'Tất cả' },
-    { id: '2026', label: '2026' },
-  ];
-
-  typeFilters = [
-    { id: 'all', label: '🗂️ Tất cả', count: '4' },
-    { id: 'thu', label: '📝 Đề thi thử tổng hợp', count: '4' },
-  ];
-
-  difficultyFilters = [
-    { id: 'all', label: 'Tất cả', count: '4' },
-    { id: 'easy', label: '🟢 Dễ', count: '1' },
-    { id: 'medium', label: '🟡 Trung bình', count: '1' },
-    { id: 'hard', label: '🔴 Khó', count: '2' },
-  ];
-
-  pages = [1];
+  pageSize = 10;
+  catalogTotalCount = 0;
+  totalCount = 0;
+  totalPages = 1;
   lastPage = 1;
+  pages: number[] = [1];
+
+  loading = true;
+  errorMessage = '';
+  examCardsMain: ExamCard[] = [];
+
+  showSidebar = false;
+  showTypeFilter = false;
+  showYearFilter = false;
+  showLevelFilter = false;
+
+  tabs: FilterOption[] = [];
+  yearChips: FilterOption[] = [];
+  typeFilters: FilterOption[] = [];
+  difficultyFilters: FilterOption[] = [];
+  sortOptions: SortOption[] = [];
+
+  // Subscription/Package logic
+  hasActivePackage = false;
+  activeUserPkg: UserPackageResponse | null = null;
+  isProcessingPayment = false;
+  selectedPackage: any = null;
+  packagesList: PackageResponse[] = [];
+
+  private catalogExams: Exam[] = [];
+  private subscriptions = new Subscription();
+
+  constructor(
+    private examService: ExamService,
+    private paymentService: PaymentService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
-    this.checkSubscription();
+    if (typeof window === 'undefined') {
+      this.loading = false;
+      return;
+    }
+
+    this.subscriptions.add(
+      this.route.queryParams.subscribe(params => {
+        if (params['payment'] === 'success') {
+          alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
+          // Clean query params from URL
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { payment: null },
+            queryParamsHandling: 'merge'
+          });
+          // Poll for update: 6 attempts × 2 seconds = 12 second max wait
+          this.pollSubscription(6, 2000);
+        }
+      })
+    );
+
+    this.checkUserSubscription();
   }
 
-  checkSubscription(): void {
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  private checkUserSubscription(): void {
     if (!this.authService.isLoggedIn()) {
       this.hasActivePackage = false;
-      this.loadAllPackages();
+      this.activeUserPkg = null;
+      this.loadPackages();
+      this.loading = false;
+      this.cdr.markForCheck();
       return;
     }
 
-    this.paymentService.getMyPackage().subscribe({
-      next: (res) => {
-        this.activeUserPkg = res;
-        this.hasActivePackage = res.isActive;
-
-        if (res.isActive) {
+    const sub = this.paymentService.getMyPackage().subscribe({
+      next: (userPackage) => {
+        this.activeUserPkg = userPackage;
+        this.hasActivePackage = userPackage?.isActive ?? false;
+        if (this.hasActivePackage) {
           this.loadExams();
         } else {
-          this.loadAllPackages();
+          this.loadPackages();
         }
+        this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error checking user subscription:', err);
         this.hasActivePackage = false;
-        this.loadAllPackages();
+        this.activeUserPkg = null;
+        this.loadPackages();
+        this.loading = false;
+        this.cdr.markForCheck();
       }
     });
+    this.subscriptions.add(sub);
   }
 
-  loadExams(): void {
-    if (!this.activeUserPkg?.packageId) return;
-    
-    const diffMap: { [key: string]: string } = {
-      'Dễ': 'easy',
-      'Trung bình': 'medium',
-      'Khó': 'hard'
-    };
+  private pollSubscription(retries: number, delayMs: number): void {
+    if (!this.authService.isLoggedIn()) return;
 
-    this.paymentService.getPackageExams(this.activeUserPkg.packageId).subscribe({
-      next: (res) => {
-        const data = res.exams || [];
-        this.exams = data;
-        this.updateExamFiltersCount(data);
+    this.paymentService.getMyPackage().subscribe({
+      next: (userPackage) => {
+        this.activeUserPkg = userPackage;
+        this.hasActivePackage = userPackage?.isActive ?? false;
+        if (this.hasActivePackage) {
+          this.loadExams();
+        } else if (retries > 0) {
+          console.log(`Polling for subscription: ${6 - retries}/6 attempts...`);
+          setTimeout(() => this.pollSubscription(retries - 1, delayMs), delayMs);
+        } else {
+          console.warn('Payment webhook may not have processed. Showing packages.');
+          this.loadPackages();
+        }
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Failed to load exams', err);
+        console.error('Error checking subscription:', err);
+        if (retries > 0) {
+          console.log(`Retry polling: ${6 - retries}/6 attempts...`);
+          setTimeout(() => this.pollSubscription(retries - 1, delayMs), delayMs);
+        } else {
+          this.hasActivePackage = false;
+          this.activeUserPkg = null;
+          this.loadPackages();
+          this.cdr.markForCheck();
+        }
       }
     });
   }
 
-  loadAllExamsFallback(): void {
-    this.examService.getExams().subscribe({
-      next: (data) => {
-        this.exams = data;
-        this.updateExamFiltersCount(data);
+  loadPackages(): void {
+    const sub = this.paymentService.getActivePackages().subscribe({
+      next: (packages) => {
+        this.packagesList = (packages || []).sort((a, b) => a.price - b.price);
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Failed to load exams fallback', err)
+      error: (err) => {
+        console.error('Error loading active packages:', err);
+      }
     });
+    this.subscriptions.add(sub);
   }
 
-  updateExamFiltersCount(data: any[]): void {
-    const diffMap: { [key: string]: string } = {
-      'Dễ': 'easy',
-      'Trung bình': 'medium',
-      'Khó': 'hard'
-    };
-    this.typeFilters[0].count = data.length.toString();
-    this.typeFilters[1].count = data.length.toString();
-    this.difficultyFilters[0].count = data.length.toString();
+  async loadExams(): Promise<void> {
+    try {
+      this.loading = true;
+      this.errorMessage = '';
+      this.currentPage = 1;
 
-    const easyCount = data.filter((e: any) => diffMap[e.level ?? ''] === 'easy').length;
-    const medCount = data.filter((e: any) => diffMap[e.level ?? ''] === 'medium').length;
-    const hardCount = data.filter((e: any) => diffMap[e.level ?? ''] === 'hard').length;
+      let exams: Exam[] = [];
 
-    this.difficultyFilters[1].count = easyCount.toString();
-    this.difficultyFilters[2].count = medCount.toString();
-    this.difficultyFilters[3].count = hardCount.toString();
-  }
+      if (this.hasActivePackage && this.activeUserPkg && this.activeUserPkg.packageId) {
+        const packageId = this.activeUserPkg.packageId;
+        try {
+          const response = await firstValueFrom(this.paymentService.getPackageExams(packageId));
 
-  onStartExam(exam: ExamResponse): void {
-    if (!this.hasActivePackage) {
-      this.notificationService.show('Bạn cần nâng cấp gói để mở khóa đề thi này!', 'error');
-      // scroll up to pricing packages
-      window.scrollTo({ top: 300, behavior: 'smooth' });
-      return;
-    }
-    this.router.navigate(['/test'], { queryParams: { examId: exam.examId } });
-  }
+          // Handle both camelCase and PascalCase response formats
+          exams = response.exams ?? response.Exams ?? response.data?.exams ?? [];
 
-  loadAllPackages(): void {
-    this.paymentService.getActivePackages().subscribe({
-      next: (data) => {
-        // Enforce the Basic, Pro, Premium exact order and descriptions if not fully detailed in DB
-        const pkgDetails: { [key: string]: { price: string, desc: string, items: string[] } } = {
-          'Basic': { 
-            price: '199.000đ', 
-            desc: 'Phù hợp ôn luyện cơ bản với mục tiêu trung bình khá.',
-            items: ['Mở khóa Đề thi số 1', 'Mở khóa Đề thi số 2', 'Giải thích chi tiết đáp án', 'Hạn sử dụng trong 30 ngày']
-          },
-          'Pro': { 
-            price: '299.000đ', 
-            desc: 'Lựa chọn hàng đầu cho học sinh đặt mục tiêu chuyên Anh.',
-            items: ['Mở khóa Đề thi số 1', 'Mở khóa Đề thi số 2', 'Mở khóa Đề thi số 3', 'Phân tích kết quả làm bài nâng cao', 'Hạn sử dụng trong 30 ngày']
-          },
-          'Premium': { 
-            price: '399.000đ', 
-            desc: 'Mở khóa toàn diện mọi giới hạn học tập trên hệ thống.',
-            items: ['Mở khóa Đề thi số 1', 'Mở khóa Đề thi số 2', 'Mở khóa Đề thi số 3', 'Mở khóa Đề thi số 4', 'Đặc quyền hỗ trợ từ Admin 24/7', 'Hạn sử dụng trong 30 ngày']
+          if (!exams || exams.length === 0) {
+            console.warn('Package returned no exams. Package ID:', packageId);
+            this.errorMessage = 'Gói học tập của bạn chưa có đề thi. Vui lòng liên hệ hỗ trợ.';
           }
-        };
-
-        this.packages = data.map(p => {
-          const details = pkgDetails[p.name] ?? { price: p.price.toLocaleString() + 'đ', desc: p.description ?? '', items: [] };
-          return {
-            ...p,
-            description: details.desc,
-            // Attach a temporary field to hold description items
-            items: details.items
-          } as any;
-        }).sort((a, b) => a.price - b.price);
-      },
-      error: (err) => {
-        console.error('Failed to load packages', err);
+        } catch (packageError) {
+          console.error('Error loading package exams:', packageError);
+          this.errorMessage = 'Không thể tải đề thi từ gói. Vui lòng thử lại.';
+          throw packageError;
+        }
+      } else {
+        // Fallback: load all exams
+        const response = await this.examService.getExams(1, 500);
+        exams = response.exams ?? response.data?.exams ?? [];
       }
-    });
+
+      this.catalogExams = exams;
+      this.catalogTotalCount = this.catalogExams.length;
+      this.buildFiltersFromCatalog(this.catalogExams);
+      this.buildSortOptions(this.catalogExams);
+      this.applyFiltersAndPaginate();
+      this.cdr.markForCheck();
+    } catch (error) {
+      console.error('Error loading exams:', error);
+      if (!this.errorMessage) {
+        this.errorMessage = 'Không tải được danh sách đề thi. Vui lòng thử lại.';
+      }
+      this.resetState();
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
   }
 
-  onBuyPackage(pkg: PackageResponse): void {
-    if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/de-thi' } });
+  private resetState(): void {
+    this.catalogExams = [];
+    this.catalogTotalCount = 0;
+    this.examCardsMain = [];
+    this.totalCount = 0;
+    this.totalPages = 1;
+    this.lastPage = 1;
+    this.pages = [1];
+    this.resetFilters();
+  }
+
+  private buildFiltersFromCatalog(exams: Exam[]): void {
+    if (!exams || exams.length === 0) {
+      this.resetFilterState();
       return;
     }
 
-    this.selectedPackage = pkg;
-    this.isProcessingPayment = true;
+    const typeCounts = new Map<string, { label: string; count: number }>();
+    const yearCounts = new Map<string, number>();
+    const levelCounts = new Map<string, { label: string; count: number }>();
 
-    this.paymentService.checkout(pkg.packageId, 'banking').subscribe({
-      next: (res) => {
-        // Redirect directly to PayOS Checkout URL
-        window.location.href = res.checkoutUrl;
-      },
-      error: (err) => {
-        this.isProcessingPayment = false;
-        this.notificationService.show('Không thể tạo giao dịch. Vui lòng thử lại!', 'error');
+    // Build filter counts in single pass
+    exams.forEach((exam) => {
+      // Type filter
+      const examType = exam.examType?.trim();
+      if (examType) {
+        const id = this.normalizeExamType(examType);
+        const existing = typeCounts.get(id);
+        typeCounts.set(id, {
+          label: this.getExamTypeLabel(id, examType),
+          count: (existing?.count ?? 0) + 1,
+        });
+      }
+
+      // Year filter
+      if (exam.year != null) {
+        const id = String(exam.year);
+        yearCounts.set(id, (yearCounts.get(id) ?? 0) + 1);
+      }
+
+      // Level filter
+      const level = exam.level?.trim();
+      if (level) {
+        const id = this.normalizeLevel(level);
+        const existing = levelCounts.get(id);
+        levelCounts.set(id, {
+          label: this.getLevelLabel(id, level),
+          count: (existing?.count ?? 0) + 1,
+        });
       }
     });
+
+    // Set filter visibility
+    this.showTypeFilter = typeCounts.size > 0;
+    this.showYearFilter = yearCounts.size > 0;
+    this.showLevelFilter = levelCounts.size > 0;
+    this.showSidebar = exams.length > 0;
+
+    // Build filter arrays
+    this.typeFilters = this.buildFilterArray(typeCounts, exams.length);
+    this.tabs = this.typeFilters;
+    this.yearChips = this.buildYearArray(yearCounts, exams.length);
+    this.difficultyFilters = this.buildFilterArray(levelCounts, exams.length);
+
+    // Reset active filters if no data
+    if (!this.showTypeFilter) {
+      this.activeType = 'all';
+      this.activeTab = 'all';
+    }
+    if (!this.showYearFilter) {
+      this.activeYear = 'all';
+    }
+    if (!this.showLevelFilter) {
+      this.activeDifficulty = 'all';
+    }
   }
 
-  getDifficultyClass(level: string): string {
-    if (level === 'Khó') return 'diff-hard';
-    if (level === 'Dễ') return 'diff-easy';
+  private resetFilterState(): void {
+    this.showSidebar = false;
+    this.showTypeFilter = false;
+    this.showYearFilter = false;
+    this.showLevelFilter = false;
+    this.typeFilters = [];
+    this.tabs = [];
+    this.yearChips = [];
+    this.difficultyFilters = [];
+  }
+
+  private buildFilterArray(
+    counts: Map<string, { label: string; count: number }>,
+    total: number
+  ): FilterOption[] {
+    return [
+      { id: 'all', label: 'Tất cả', count: total },
+      ...Array.from(counts.entries()).map(([id, value]) => ({
+        id,
+        label: value.label,
+        count: value.count,
+      })),
+    ];
+  }
+
+  private buildYearArray(yearCounts: Map<string, number>, total: number): FilterOption[] {
+    return [
+      { id: 'all', label: 'Tất cả', count: total },
+      ...Array.from(yearCounts.entries())
+        .sort(([a], [b]) => Number(b) - Number(a))
+        .map(([id, count]) => ({ id, label: id, count })),
+    ];
+  }
+
+  private resetFilters(): void {
+    this.activeType = 'all';
+    this.activeYear = 'all';
+    this.activeDifficulty = 'all';
+    this.activeSort = 'title-asc';
+    this.searchQuery = '';
+    this.currentPage = 1;
+  }
+
+  private buildSortOptions(exams: Exam[]): void {
+    const hasCreatedAt = exams.some(exam => !!exam.createdAt);
+    const hasViews = exams.some(exam => (exam.viewsCount ?? 0) > 0);
+    const hasAttempts = exams.some(exam => (exam.attemptsCount ?? 0) > 0);
+    const hasQuestions = exams.some(exam => (exam.questionsCount ?? 0) > 0);
+    const hasYear = exams.some(exam => exam.year != null);
+
+    const options: SortOption[] = [];
+
+    if (hasCreatedAt) {
+      options.push({ id: 'newest', label: 'Mới nhất' });
+      options.push({ id: 'oldest', label: 'Cũ nhất' });
+    }
+
+    options.push(
+      { id: 'title-asc', label: 'Tên A → Z' },
+      { id: 'title-desc', label: 'Tên Z → A' },
+    );
+
+    if (hasViews) {
+      options.push({ id: 'views-desc', label: 'Nhiều lượt xem nhất' });
+    }
+
+    if (hasAttempts) {
+      options.push({ id: 'attempts-desc', label: 'Nhiều lượt làm nhất' });
+    }
+
+    if (hasQuestions) {
+      options.push(
+        { id: 'questions-desc', label: 'Nhiều câu nhất' },
+        { id: 'questions-asc', label: 'Ít câu nhất' },
+      );
+    }
+
+    if (exams.length > 0) {
+      options.push(
+        { id: 'duration-desc', label: 'Thời gian dài nhất' },
+        { id: 'duration-asc', label: 'Thời gian ngắn nhất' },
+      );
+    }
+
+    if (hasYear) {
+      options.push(
+        { id: 'year-desc', label: 'Năm mới nhất' },
+        { id: 'year-asc', label: 'Năm cũ nhất' },
+      );
+    }
+
+    this.sortOptions = options;
+    const defaultSort = hasCreatedAt ? 'newest' : 'title-asc';
+    this.activeSort = options.some(option => option.id === this.activeSort)
+      ? this.activeSort
+      : defaultSort;
+  }
+
+  private applyFiltersAndPaginate(): void {
+    let filtered = [...this.catalogExams];
+
+    const query = this.searchQuery.trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(exam => {
+        const title = exam.title?.toLowerCase() ?? '';
+        const description = exam.description?.toLowerCase() ?? '';
+        return title.includes(query) || description.includes(query);
+      });
+    }
+
+    if (this.showTypeFilter && this.activeType !== 'all') {
+      filtered = filtered.filter(
+        exam => exam.examType?.trim() && this.normalizeExamType(exam.examType) === this.activeType
+      );
+    }
+
+    if (this.showYearFilter && this.activeYear !== 'all') {
+      filtered = filtered.filter(exam => exam.year != null && String(exam.year) === this.activeYear);
+    }
+
+    if (this.showLevelFilter && this.activeDifficulty !== 'all') {
+      filtered = filtered.filter(
+        exam => exam.level?.trim() && this.normalizeLevel(exam.level) === this.activeDifficulty
+      );
+    }
+
+    const sorted = this.sortExams(filtered);
+    const newestExamId = this.getNewestExamId(sorted);
+
+    this.totalCount = sorted.length;
+    this.totalPages = Math.max(1, Math.ceil(sorted.length / this.pageSize));
+    this.lastPage = this.totalPages;
+
+    if (this.currentPage > this.lastPage) {
+      this.currentPage = this.lastPage;
+    }
+
+    this.pages = Array.from({ length: Math.min(5, this.lastPage) }, (_v, index) => index + 1);
+
+    const start = (this.currentPage - 1) * this.pageSize;
+    this.examCardsMain = sorted
+      .slice(start, start + this.pageSize)
+      .map((exam, index) => this.toExamCard(exam, start + index, newestExamId));
+  }
+
+  private sortExams(exams: Exam[]): Exam[] {
+    const sorted = [...exams];
+
+    switch (this.activeSort) {
+      case 'newest':
+        return sorted.sort((a, b) => this.compareDateDesc(this.getSortDate(b), this.getSortDate(a)));
+      case 'oldest':
+        return sorted.sort((a, b) => this.compareDateDesc(this.getSortDate(a), this.getSortDate(b)));
+      case 'title-asc':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' }));
+      case 'title-desc':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title, 'vi', { sensitivity: 'base' }));
+      case 'views-desc':
+        return sorted.sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0));
+      case 'attempts-desc':
+        return sorted.sort((a, b) => (b.attemptsCount ?? 0) - (a.attemptsCount ?? 0));
+      case 'questions-desc':
+        return sorted.sort((a, b) => (b.questionsCount ?? 0) - (a.questionsCount ?? 0));
+      case 'questions-asc':
+        return sorted.sort((a, b) => (a.questionsCount ?? 0) - (b.questionsCount ?? 0));
+      case 'duration-desc':
+        return sorted.sort((a, b) => b.durationTime - a.durationTime);
+      case 'duration-asc':
+        return sorted.sort((a, b) => a.durationTime - b.durationTime);
+      case 'year-desc':
+        return sorted.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+      case 'year-asc':
+        return sorted.sort((a, b) => (a.year ?? 0) - (b.year ?? 0));
+      default:
+        return sorted;
+    }
+  }
+
+  private getSortDate(exam: Exam): string | undefined {
+    return exam.createdAt ?? exam.updatedAt;
+  }
+
+  private compareDateDesc(a?: string, b?: string): number {
+    const timeA = a ? new Date(a).getTime() : 0;
+    const timeB = b ? new Date(b).getTime() : 0;
+    return timeA - timeB;
+  }
+
+  private getNewestExamId(exams: Exam[]): string | null {
+    if (exams.length === 0) return null;
+
+    const newest = [...exams].sort(
+      (a, b) => this.compareDateDesc(this.getSortDate(b), this.getSortDate(a))
+    )[0];
+
+    return newest?.examId ?? null;
+  }
+
+  private toExamCard(exam: Exam, index: number, newestExamId: string | null): ExamCard {
+    const level = exam.level?.trim() || '';
+    const covers = ['cover-blue', 'cover-sky', 'cover-teal', 'cover-indigo', 'cover-emerald', 'cover-violet'];
+
+    return {
+      examId: exam.examId,
+      title: exam.title,
+      description: exam.description || '',
+      questionsCount: exam.questionsCount || 0,
+      durationTime: exam.durationTime,
+      viewsCount: exam.viewsCount?.toString() || '0',
+      level: level || '—',
+      levelClass: level ? this.getLevelClass(level) : 'diff-medium',
+      action: 'Làm bài →',
+      cover: covers[index % covers.length],
+      tag: exam.examId === newestExamId ? 'Mới' : 'Đề thi',
+      tagClass: exam.examId === newestExamId ? 'tag-new' : 'tag-free',
+    };
+  }
+
+  private normalizeExamType(examType: string): string {
+    const value = examType.trim().toLowerCase();
+
+    if (value.includes('thu') || value.includes('practice') || value.includes('thử')) {
+      return 'thu';
+    }
+
+    if (value.includes('chinh') || value.includes('official') || value.includes('chính')) {
+      return 'chinh-thuc';
+    }
+
+    return value;
+  }
+
+  private getExamTypeLabel(id: string, raw: string): string {
+    const labels: Record<string, string> = {
+      thu: 'Đề thi thử',
+      'chinh-thuc': 'Đề chính thức',
+      practice: 'Đề thi thử',
+      official: 'Đề chính thức',
+    };
+
+    return labels[id] ?? raw;
+  }
+
+  private normalizeLevel(level: string): string {
+    const value = level.trim().toLowerCase();
+
+    if (value.includes('easy') || value.includes('dễ') || value === 'de') {
+      return 'easy';
+    }
+
+    if (value.includes('hard') || value.includes('khó') || value === 'kho') {
+      return 'hard';
+    }
+
+    if (value.includes('medium') || value.includes('trung')) {
+      return 'medium';
+    }
+
+    return value;
+  }
+
+  private getLevelLabel(id: string, raw: string): string {
+    const labels: Record<string, string> = {
+      easy: 'Dễ',
+      medium: 'Trung bình',
+      hard: 'Khó',
+    };
+
+    return labels[id] ?? raw;
+  }
+
+  private getLevelClass(level: string): string {
+    const normalized = this.normalizeLevel(level);
+
+    if (normalized === 'easy') return 'diff-easy';
+    if (normalized === 'hard') return 'diff-hard';
     return 'diff-medium';
   }
 
-  getRandomCoverClass(id: string): string {
-    const covers = ['cover-blue', 'cover-sky', 'cover-teal', 'cover-indigo', 'cover-emerald', 'cover-violet'];
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % covers.length;
-    return covers[index];
+  onSearchInput(event: Event): void {
+    this.searchQuery = (event.target as HTMLInputElement).value;
+    this.currentPage = 1;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
   }
 
   setTab(id: string): void {
     this.activeTab = id;
+    this.activeType = id;
+    this.currentPage = 1;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
   }
+
   setYear(id: string): void {
     this.activeYear = id;
+    this.currentPage = 1;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
   }
+
   setDifficulty(id: string): void {
     this.activeDifficulty = id;
+    this.currentPage = 1;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
   }
+
   setType(id: string): void {
     this.activeType = id;
+    this.activeTab = id;
+    this.currentPage = 1;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
   }
+
   setView(mode: 'grid' | 'list'): void {
+    if (this.viewMode === mode) return;
+
     this.viewMode = mode;
+    this.cdr.markForCheck();
   }
-  setPage(p: number): void {
-    this.currentPage = p;
+
+  onSortChange(event: Event): void {
+    this.activeSort = (event.target as HTMLSelectElement).value as SortId;
+    this.currentPage = 1;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
+  }
+
+  setPage(page: number): void {
+    if (page < 1 || page > this.lastPage || page === this.currentPage) return;
+
+    this.currentPage = page;
+    this.applyFiltersAndPaginate();
+    this.cdr.markForCheck();
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!this.searchQuery.trim()
+      || (this.showTypeFilter && this.activeType !== 'all')
+      || (this.showYearFilter && this.activeYear !== 'all')
+      || (this.showLevelFilter && this.activeDifficulty !== 'all');
+  }
+
+  onBuyPackage(pkg: any): void {
+    if (!this.authService.isLoggedIn()) {
+      alert('Vui lòng đăng nhập để đăng ký gói học tập.');
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.isProcessingPayment = true;
+    this.selectedPackage = pkg;
+    this.cdr.markForCheck();
+
+    // If it's a free trial package
+    if (pkg.price === 0 || pkg.name.toLowerCase().includes('dùng thử')) {
+      this.paymentService.activateFreeTrial().subscribe({
+        next: (response) => {
+          alert('Kích hoạt dùng thử miễn phí thành công! Bắt đầu trải nghiệm ngay.');
+          this.isProcessingPayment = false;
+          this.selectedPackage = null;
+          this.checkUserSubscription();
+        },
+        error: (err) => {
+          console.error('Error activating free trial:', err);
+          alert(err.error?.message || 'Bạn đã sử dụng gói dùng thử trước đó rồi.');
+          this.isProcessingPayment = false;
+          this.selectedPackage = null;
+          this.cdr.markForCheck();
+        }
+      });
+    } else {
+      // Call checkout API for paid packages
+      this.paymentService.checkout(pkg.packageId, 'bank_transfer').subscribe({
+        next: (response) => {
+          console.log('Checkout initiated:', response);
+          if (response.checkoutUrl) {
+            window.location.href = response.checkoutUrl;
+          }
+          this.isProcessingPayment = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error during checkout:', err);
+          alert('Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.');
+          this.isProcessingPayment = false;
+          this.selectedPackage = null;
+          this.cdr.markForCheck();
+        }
+      });
+    }
+  }
+
+  onStartExam(exam: ExamCard): void {
+    if (!this.hasActivePackage) {
+      alert('Vui lòng mua gói để truy cập đề thi.');
+      return;
+    }
+    // Navigate to take exam (route is '/test')
+    this.router.navigate(['/test'], { queryParams: { examId: exam.examId } });
+  }
+
+  getPackageFeatures(name: string): string[] {
+    const defaultFeatures = ['Chấm điểm tự động', 'Xem đáp án giải thích'];
+    if (name.includes('Dùng Thử')) {
+      return ['1 bộ đề thi đầy đủ', 'Thời hạn 3 ngày', ...defaultFeatures];
+    }
+    if (name.includes('Cấp Tốc')) {
+      return ['30 bộ đề thi chuẩn', 'Thời hạn 1 tháng', ...defaultFeatures, 'Hỗ trợ cơ bản'];
+    }
+    if (name.includes('Nâng Cao')) {
+      return ['65 bộ đề thi chuẩn', 'Thời hạn 3 tháng', ...defaultFeatures, 'Bảng điều khiển cá nhân'];
+    }
+    if (name.includes('Chuyên Sâu')) {
+      return ['150+ bộ đề thi chuẩn', 'Thời hạn 6 tháng', ...defaultFeatures, 'Phân tích kết quả chuyên sâu'];
+    }
+    if (name.includes('Premium')) {
+      return ['Không giới hạn đề thi', 'Thời hạn 12 tháng', ...defaultFeatures, 'VIP support 24/7'];
+    }
+    return defaultFeatures;
   }
 }

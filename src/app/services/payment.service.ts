@@ -67,6 +67,10 @@ export class PaymentService {
     return this.http.get<UserPackageResponse>(`${this.apiUrl}/Packages/my-package`);
   }
 
+  activateFreeTrial(): Observable<UserPackageResponse> {
+    return this.http.post<UserPackageResponse>(`${this.apiUrl}/Packages/activate-free-trial`, {});
+  }
+
   checkout(packageId: string, paymentMethod: string): Observable<CheckoutResponse> {
     return this.http.post<CheckoutResponse>(`${this.apiUrl}/Payments/checkout`, {
       packageId,
