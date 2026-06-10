@@ -700,13 +700,15 @@ export class ExamComponent implements OnInit, OnDestroy {
       || (this.showLevelFilter && this.activeDifficulty !== 'all');
   }
 
-  onBuyPackage(pkg: any): void {
+  handlePackagePurchase(pkg: any): void {
     if (!this.authService.isLoggedIn()) {
-      alert('Vui lòng đăng nhập để đăng ký gói học tập.');
       this.router.navigate(['/login']);
       return;
     }
+    this.onBuyPackage(pkg);
+  }
 
+  onBuyPackage(pkg: any): void {
     this.isProcessingPayment = true;
     this.selectedPackage = pkg;
     this.cdr.markForCheck();
