@@ -27,7 +27,12 @@
             />
           </div>
           <div class="error-msg" *ngIf="form.controls['otp'].touched && form.controls['otp'].invalid">
-            Mã OTP phải gồm 6 chữ số.
+            <ng-container *ngIf="form.controls['otp'].errors?.['pattern'] || form.controls['otp'].errors?.['required']">
+              Mã OTP phải gồm 6 chữ số.
+            </ng-container>
+            <ng-container *ngIf="form.controls['otp'].errors?.['server']">
+              {{ error || 'Mã OTP không hợp lệ' }}
+            </ng-container>
           </div>
         </div>
 
@@ -49,8 +54,6 @@
           <span *ngIf="!loading">Xác nhận</span>
           <span *ngIf="loading" class="spinner"></span>
         </button>
-
-        <div class="server-error" *ngIf="error || resendError">{{ error || resendError }}</div>
       </form>
 
       <div class="auth-footer">

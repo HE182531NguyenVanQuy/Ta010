@@ -53,7 +53,11 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
 
   submit() {
     this.error = '';
-    if (this.form.invalid) return;
+    this.form.controls['otp'].setErrors(null);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.loading = true;
     const otp = this.form.value.otp!;
     this.auth.verifyOtp(this.email, otp).subscribe({
@@ -63,7 +67,10 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         this.router.navigate(['/reset-password'], { replaceUrl: true }); 
       },
       error: (err: any) => {
-        this.error = err?.error?.message ?? 'Mã OTP không hợp lệ';
+        const message = err?.error?.message ?? 'Mã OTP không hợp lệ';
+        this.error = message;
+        this.form.controls['otp'].setErrors({ server: true });
+        this.form.controls['otp'].markAsTouched();
         this.loading = false;
       }
     });
