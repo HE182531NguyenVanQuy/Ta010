@@ -20,13 +20,13 @@ interface ExamCard {
   tagClass: string;
 }
 
-interface BlogItem {
-  id: string;
-  title: string;
-  meta: string;
-  emoji: string;
-  thumbClass: string;
-}
+// interface BlogItem {
+//   id: string;
+//   title: string;
+//   meta: string;
+//   emoji: string;
+//   thumbClass: string;
+// }
 
 interface ScheduleItem {
   day: string;
@@ -64,7 +64,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private leaderboardSub: Subscription | null = null;
 
   examCards: ExamCard[] = [];
-  blogItems: BlogItem[] = [];
+  // blogItems: BlogItem[] = [];
 
   // Static/Config sections
   
@@ -79,6 +79,33 @@ export class HomeComponent implements OnInit, OnDestroy {
     { name: 'Kỹ năng đọc hiểu', count: '15 chủ điểm · 300 bài', emoji: '🗣️' },
   ];
 
+  blogItems = [
+    {
+      title: 'Cấu trúc đề thi Tiếng Anh vào lớp 10 năm 2026 – Những thay đổi quan trọng cần biết',
+      meta: '📅 15/03/2026 · ⏱ 5 phút đọc · 👁 8.2k lượt xem',
+      emoji: '📰',
+      thumbClass: 'blog-thumb-sky',
+    },
+    {
+      title: '10 mẹo làm bài thi Tiếng Anh đạt điểm cao cho học sinh lớp 9',
+      meta: '📅 12/03/2026 · ⏱ 7 phút đọc · 👁 6.5k lượt xem',
+      emoji: '💡',
+      thumbClass: 'blog-thumb-amber',
+    },
+    {
+      title: 'Tổng hợp đề thi ôn luyện thành phố Hà Nội năm học 2023-2025',
+      meta: '📅 10/03/2026 · ⏱ 3 phút đọc · 👁 14k lượt xem',
+      emoji: '📚',
+      thumbClass: 'blog-thumb-green',
+    },
+    {
+      title: 'Lộ trình ôn tập hiệu quả 3 tháng trước kỳ thi tuyển sinh lớp 10',
+      meta: '📅 08/03/2026 · ⏱ 6 phút đọc · 👁 10.8k lượt xem',
+      emoji: '🎯',
+      thumbClass: 'blog-thumb-purple',
+    },
+  ];
+  
   leaderboard = [
     { rank: '🏆', rankClass: 'rank-1', name: 'Nguyễn Minh Anh', score: 'Hà Nội · 48 bài', points: '9,850', initial: 'N', avatarBg: 'linear-gradient(135deg,#0ea5e9,#38bdf8)' },
     { rank: '🥈', rankClass: 'rank-2', name: 'Trần Thị Lan', score: 'TP.HCM · 45 bài', points: '9,420', initial: 'T', avatarBg: 'linear-gradient(135deg,#10b981,#34d399)' },
