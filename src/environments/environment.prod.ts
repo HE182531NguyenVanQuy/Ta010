@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:5185/api' // set your production API origin
+  apiUrl: 'https://vickquy1312004-001-site1.ntempurl.com/api'
 };
