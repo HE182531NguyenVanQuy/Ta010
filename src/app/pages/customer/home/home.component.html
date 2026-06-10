@@ -197,15 +197,15 @@
     }
   </div>
 
-  <!-- TWO COLS: BLOG + LEADERBOARD -->
+   <!-- TWO COLS: BLOG + LEADERBOARD -->
   <div class="section-title-row fade-up">
     <h2 class="section-title">Tin tức &amp; <span>Tài liệu</span></h2>
     <a href="#" class="view-all">Xem tất cả →</a>
   </div>
   <div class="two-cols fade-up">
     <div class="blog-grid">
-      @for (blog of blogItems; track blog.id) {
-        <a class="blog-card" [routerLink]="['/blog', blog.id]">
+      @for (blog of blogItems; track blog.title) {
+        <a class="blog-card" href="#">
           <div class="blog-thumb" [ngClass]="blog.thumbClass">{{ blog.emoji }}</div>
           <div>
             <div class="blog-title">{{ blog.title }}</div>
