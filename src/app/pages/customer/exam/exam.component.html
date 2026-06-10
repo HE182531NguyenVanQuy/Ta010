@@ -77,7 +77,7 @@
             <button
               type="button"
               class="btn-subscribe"
-              (click)="onBuyPackage(pkg)"
+              (click)="handlePackagePurchase(pkg)"
               [disabled]="isProcessingPayment"
               [class.is-loading]="isProcessingPayment && selectedPackage?.packageId === pkg.packageId">
               <span class="btn-text">
