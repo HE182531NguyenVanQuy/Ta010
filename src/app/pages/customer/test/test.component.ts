@@ -30,6 +30,13 @@ export interface ExamData {
   questionsCount?: number;
 }
 
+interface QuestionSection {
+  key: string;
+  title: string;
+  subtitle: string;
+  questions: Question[];
+}
+
 @Component({
   selector: 'app-test',
   standalone: true,
@@ -43,6 +50,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
   // ── API Data ────────────────────────────────────────────────
   examData: ExamData | null = null;
   questions: Question[] = [];
+  private passageOnlyQuestions: Question[] = [];
   loading = true;
   attemptId: string | null = null;
   currentExamId = '';
@@ -57,6 +65,9 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ── Câu trả lời người dùng ──────────────────────────────────
   userAnswers: { [questionId: string]: string } = {};
+  questionDisplayText: { [questionId: string]: string } = {};
+  questionPassages: { [questionId: string]: string } = {};
+  questionSections: QuestionSection[] = [];
 
   // ── Trạng thái nav ô: empty | answered
   navStates: { [questionId: string]: NavState } = {};
@@ -181,7 +192,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       // Fetch exam with questions from API
       const response = await this.examService.getExamWithQuestions(examId);
       this.examData = response.data?.exam;
-      this.questions = response.data?.questions || [];
+      this.setQuestions(response.data?.questions || []);
       
       // Initialize state for each question
       this.questions.forEach(q => {
@@ -225,6 +236,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       this.explVisible[q.questionId]  = false;
       this.optionStates[q.questionId] = this.getEmptyOptionState(q);
     });
+    this.rebuildQuestionDisplay(this.passageOnlyQuestions);
   }
 
   loadProgress(): void {
@@ -462,7 +474,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
           this.normalizeQuestion(question)
         ])
       );
-      this.questions = this.questions.map(question => {
+      this.questions = this.sortQuestions(this.questions.map(question => {
         const updated = questionsById.get(question.questionId);
         if (!updated) return question;
         return {
@@ -471,7 +483,8 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
           correctAnswer: updated.correctAnswer || question.correctAnswer,
           explanation: updated.explanation || question.explanation,
         };
-      });
+      }));
+      this.rebuildQuestionDisplay(this.passageOnlyQuestions);
     }
 
     const correctAnswers = submittedAttempt?.correctAnswers ?? submittedAttempt?.CorrectAnswers;
@@ -498,6 +511,408 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       correctAnswer: typeof correctAnswer === 'string' ? correctAnswer.trim().toUpperCase() : correctAnswer,
       explanation: question.explanation ?? question.Explanation,
     };
+  }
+
+  private setQuestions(rawQuestions: Question[]): void {
+    const sortedQuestions = this.sortQuestions(rawQuestions);
+    this.passageOnlyQuestions = sortedQuestions.filter(question => !this.isAnswerableQuestion(question));
+    this.questions = sortedQuestions.filter(question => this.isAnswerableQuestion(question));
+    this.rebuildQuestionDisplay(this.passageOnlyQuestions);
+  }
+
+  private isAnswerableQuestion(question: Question): boolean {
+    return this.getQuestionOptions(question).length > 0;
+  }
+
+  private sortQuestions(questions: Question[]): Question[] {
+    return [...questions].sort((left, right) => {
+      const leftNumber = Number(left.questionNumber);
+      const rightNumber = Number(right.questionNumber);
+
+      if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && leftNumber !== rightNumber) {
+        return leftNumber - rightNumber;
+      }
+
+      if (Number.isFinite(leftNumber) !== Number.isFinite(rightNumber)) {
+        return Number.isFinite(leftNumber) ? -1 : 1;
+      }
+
+      return String(left.questionId).localeCompare(String(right.questionId));
+    });
+  }
+
+  private rebuildQuestionDisplay(passageOnlyQuestions: Question[]): void {
+    this.questionDisplayText = {};
+    this.questionPassages = {};
+
+    this.attachStandalonePassages(passageOnlyQuestions);
+    this.extractRepeatedPassagesFromAnswerableQuestions();
+    this.questionSections = this.buildQuestionSections();
+  }
+
+  private attachStandalonePassages(passageOnlyQuestions: Question[]): void {
+    const readingPassages = this.sortQuestions(passageOnlyQuestions.filter(question =>
+      this.isReadingSection(question.section) || this.looksLikePassage(question.questionText)
+    ));
+
+    for (const [index, passage] of readingPassages.entries()) {
+      const target = this.findFixedPassageTarget(passage, index) ?? this.findFirstQuestionForPassage(passage);
+      if (!target || this.questionPassages[target.questionId]) continue;
+
+      this.questionPassages[target.questionId] = passage.questionText;
+    }
+  }
+
+  private findFixedPassageTarget(passage: Question, index: number): Question | undefined {
+    const ordinal =
+      this.extractReadingOrdinal(`${passage.section || ''} ${passage.questionText || ''}`) ??
+      this.inferStandalonePassageOrdinal(passage) ??
+      (index + 1);
+
+    const startQuestionByOrdinal: Record<number, number> = {
+      1: 25,
+      2: 31,
+    };
+    const startQuestionNumber = startQuestionByOrdinal[ordinal];
+
+    if (!startQuestionNumber) return undefined;
+    return this.questions.find(question => Number(question.questionNumber) === startQuestionNumber);
+  }
+
+  private findReadingGroupTargets(): Question[] {
+    const sectionTargets = this.groupConsecutiveQuestionsBySection(this.questions)
+      .filter(group =>
+        !!this.normalizeSection(group[0]?.section) &&
+        this.isReadingSection(group[0]?.section)
+      )
+      .map(group => group[0])
+      .filter((question): question is Question => !!question);
+
+    const repeatedTextTargets = this.findRepeatedPassageGroupTargets();
+    const seen = new Set<string>();
+
+    return [...sectionTargets, ...repeatedTextTargets].filter(question => {
+      if (seen.has(question.questionId)) return false;
+      seen.add(question.questionId);
+      return true;
+    });
+  }
+
+  private findRepeatedPassageGroupTargets(): Question[] {
+    const targets: Question[] = [];
+    let index = 0;
+
+    while (index < this.questions.length - 1) {
+      const passage = this.extractSharedPassageFromRepeatedText(
+        this.questions.slice(index, index + 2)
+      );
+
+      if (!passage) {
+        index++;
+        continue;
+      }
+
+      targets.push(this.questions[index]);
+
+      let end = index + 2;
+      while (
+        end < this.questions.length &&
+        this.extractSharedPassageFromRepeatedText(this.questions.slice(index, end + 1))
+      ) {
+        end++;
+      }
+
+      index = end;
+    }
+
+    return targets;
+  }
+
+  private findFirstQuestionForPassage(passage: Question): Question | undefined {
+    const passageNumber = Number(passage.questionNumber);
+    const section = this.normalizeSection(passage.section);
+    const passageOrdinal =
+      this.extractReadingOrdinal(`${passage.section || ''} ${passage.questionText || ''}`) ??
+      this.inferStandalonePassageOrdinal(passage);
+    const readingGroups = this.findReadingQuestionGroups();
+
+    if (passageOrdinal !== null) {
+      const ordinalGroup = readingGroups.find(group => group.ordinal === passageOrdinal);
+      if (ordinalGroup?.questions[0]) return ordinalGroup.questions[0];
+    }
+
+    if (section) {
+      const sameSection = this.questions.find(question =>
+        this.normalizeSection(question.section) === section
+      );
+      if (sameSection) return sameSection;
+    }
+
+    if (Number.isFinite(passageNumber)) {
+      const laterQuestion = this.questions.find(question => Number(question.questionNumber) >= passageNumber);
+      if (laterQuestion) return laterQuestion;
+    }
+
+    return readingGroups[0]?.questions[0] ?? this.questions[0];
+  }
+
+  private findReadingQuestionGroups(): { ordinal: number | null; questions: Question[] }[] {
+    return this.buildQuestionGroups()
+      .filter(group =>
+        this.isReadingSection(group.questions[0]?.section) ||
+        this.extractReadingOrdinal(group.title) !== null ||
+        group.questions.some(question => this.looksLikePassage(question.questionText))
+      )
+      .map(group => ({
+        ordinal: this.extractReadingOrdinal(group.title),
+        questions: group.questions,
+      }));
+  }
+
+  private extractRepeatedPassagesFromAnswerableQuestions(): void {
+    for (const question of this.questions) {
+      this.questionDisplayText[question.questionId] = question.questionText;
+    }
+
+    const groups = this.groupConsecutiveQuestionsBySection(this.questions);
+
+    for (const group of groups) {
+      const passage = this.extractSharedPassage(group);
+
+      for (const question of group) {
+        this.questionDisplayText[question.questionId] = passage
+          ? this.stripSharedPassage(question.questionText, passage)
+          : question.questionText;
+      }
+
+      if (passage && group[0] && !this.questionPassages[group[0].questionId]) {
+        this.questionPassages[group[0].questionId] = passage;
+      }
+    }
+
+    this.extractRepeatedPassagesFromAdjacentQuestions();
+  }
+
+  private extractRepeatedPassagesFromAdjacentQuestions(): void {
+    let index = 0;
+
+    while (index < this.questions.length - 1) {
+      let end = index + 1;
+      let bestPassage: string | undefined;
+
+      while (end < this.questions.length) {
+        const group = this.questions.slice(index, end + 1);
+        const passage = this.extractSharedPassageFromRepeatedText(group);
+        if (!passage) break;
+
+        bestPassage = passage;
+        end++;
+      }
+
+      if (bestPassage) {
+        const group = this.questions.slice(index, end);
+        const firstQuestion = group[0];
+
+        if (firstQuestion && !this.questionPassages[firstQuestion.questionId]) {
+          this.questionPassages[firstQuestion.questionId] = bestPassage;
+        }
+
+        for (const question of group) {
+          this.questionDisplayText[question.questionId] = this.stripSharedPassage(question.questionText, bestPassage);
+        }
+
+        index = end;
+      } else {
+        index++;
+      }
+    }
+  }
+
+  private groupConsecutiveQuestionsBySection(questions: Question[]): Question[][] {
+    const groups: Question[][] = [];
+
+    questions.forEach(question => {
+      const currentGroup = groups[groups.length - 1];
+      const currentSection = this.normalizeSection(currentGroup?.[0]?.section);
+      const questionSection = this.normalizeSection(question.section);
+
+      if (!currentGroup || currentSection !== questionSection) {
+        groups.push([question]);
+      } else {
+        currentGroup.push(question);
+      }
+    });
+
+    return groups;
+  }
+
+  private buildQuestionSections(): QuestionSection[] {
+    return this.buildQuestionGroups().map(group => ({
+      key: group.key,
+      title: group.title,
+      subtitle: `Câu ${group.questions[0].questionNumber} - ${group.questions[group.questions.length - 1].questionNumber}`,
+      questions: group.questions,
+    }));
+  }
+
+  private buildQuestionGroups(): { key: string; title: string; questions: Question[] }[] {
+    const groups: { key: string; title: string; questions: Question[] }[] = [];
+
+    for (const question of this.questions) {
+      const key = this.getQuestionSectionKey(question);
+      const currentGroup = groups[groups.length - 1];
+
+      if (!currentGroup || currentGroup.key !== key) {
+        groups.push({
+          key,
+          title: this.getQuestionSectionTitle(question),
+          questions: [question],
+        });
+      } else {
+        currentGroup.questions.push(question);
+      }
+    }
+
+    return groups;
+  }
+
+  private getQuestionSectionKey(question: Question): string {
+    const section = this.normalizeSection(question.section);
+    if (section) return section;
+
+    return this.getInferredQuestionType(question.questionNumber);
+  }
+
+  private getQuestionSectionTitle(question: Question): string {
+    const section = (question.section || '').trim();
+    if (section) return section;
+
+    const labels: Record<string, string> = {
+      pronunciation: 'Phần phát âm và trọng âm',
+      grammar: 'Phần ngữ pháp và từ vựng',
+      communication: 'Phần giao tiếp',
+      synonym: 'Phần đồng nghĩa - trái nghĩa',
+      cloze: 'Bài đọc 1 - Điền từ',
+      reading: 'Bài đọc 2 - Đọc hiểu',
+      rewrite: 'Phần viết lại câu',
+      other: 'Phần câu hỏi khác',
+    };
+
+    return labels[this.getInferredQuestionType(question.questionNumber)] ?? labels['other'];
+  }
+
+  private getInferredQuestionType(questionNumber: number): string {
+    const number = Number(questionNumber);
+
+    if (number >= 1 && number <= 4) return 'pronunciation';
+    if (number >= 5 && number <= 18) return 'grammar';
+    if (number >= 19 && number <= 20) return 'communication';
+    if (number >= 21 && number <= 24) return 'synonym';
+    if (number >= 25 && number <= 30) return 'cloze';
+    if (number >= 31 && number <= 34) return 'reading';
+    if (number >= 35 && number <= 40) return 'rewrite';
+
+    return 'other';
+  }
+
+  private normalizeSection(section?: string): string {
+    return (section || '').trim().toLowerCase();
+  }
+
+  private extractSharedPassage(questions: Question[]): string | undefined {
+    if (questions.length < 2) return undefined;
+
+    const texts = questions.map(question => question.questionText || '').filter(Boolean);
+    if (texts.length < 2) return undefined;
+
+    const commonPrefix = this.getCommonPrefix(texts).trim();
+    const looksLikeReading = this.isReadingSection(questions[0]?.section);
+
+    if (!looksLikeReading && commonPrefix.length < 250) return undefined;
+    if (commonPrefix.length < 120) return undefined;
+
+    const safePrefix = this.trimToReadableBoundary(commonPrefix);
+    return safePrefix.length >= 120 ? safePrefix : undefined;
+  }
+
+  private extractSharedPassageFromRepeatedText(questions: Question[]): string | undefined {
+    if (questions.length < 2) return undefined;
+
+    const texts = questions.map(question => question.questionText || '').filter(Boolean);
+    if (texts.length < 2) return undefined;
+
+    const commonPrefix = this.getCommonPrefix(texts).trim();
+    if (commonPrefix.length < 120) return undefined;
+
+    const safePrefix = this.trimToReadableBoundary(commonPrefix);
+    return safePrefix.length >= 120 ? safePrefix : undefined;
+  }
+
+  private isReadingSection(section?: string): boolean {
+    return /(reading|passage|đọc|doc|bài đọc|bai doc)/i.test(section || '');
+  }
+
+  private extractReadingOrdinal(text?: string): number | null {
+    const value = (text || '').toLowerCase();
+    const match = value.match(/(?:bài\s*đọc|bai\s*doc|reading|passage)\s*(\d+)/i);
+    if (!match) return null;
+
+    const ordinal = Number(match[1]);
+    return Number.isFinite(ordinal) ? ordinal : null;
+  }
+
+  private inferStandalonePassageOrdinal(passage: Question): number | null {
+    const passageNumber = Number(passage.questionNumber);
+
+    if (!this.looksLikePassage(passage.questionText)) return null;
+    if (!Number.isFinite(passageNumber)) return null;
+
+    return passageNumber > 0 && passageNumber <= 5 ? passageNumber : null;
+  }
+
+  private looksLikePassage(text?: string): boolean {
+    const value = (text || '').trim();
+    return value.length >= 120 || /(read the passage|đọc đoạn văn|bài đọc|passage)/i.test(value);
+  }
+
+  private getCommonPrefix(texts: string[]): string {
+    let prefix = texts[0];
+
+    for (const text of texts.slice(1)) {
+      let index = 0;
+      while (index < prefix.length && index < text.length && prefix[index] === text[index]) {
+        index++;
+      }
+      prefix = prefix.slice(0, index);
+      if (!prefix) break;
+    }
+
+    return prefix;
+  }
+
+  private trimToReadableBoundary(text: string): string {
+    const boundaries = ['</p>', '<br>', '<br/>', '<br />', '\n\n', '\n', '. ', '? ', '! '];
+    let boundaryIndex = -1;
+    let boundaryLength = 0;
+
+    boundaries.forEach(boundary => {
+      const index = text.lastIndexOf(boundary);
+      if (index > boundaryIndex) {
+        boundaryIndex = index;
+        boundaryLength = boundary.length;
+      }
+    });
+
+    if (boundaryIndex < 120) return text.trim();
+    return text.slice(0, boundaryIndex + boundaryLength).trim();
+  }
+
+  private stripSharedPassage(questionText: string, passage: string): string {
+    const stripped = questionText.startsWith(passage)
+      ? questionText.slice(passage.length).trim()
+      : questionText.replace(passage, '').trim();
+
+    return stripped || questionText;
   }
 
   confirmResult(): void {

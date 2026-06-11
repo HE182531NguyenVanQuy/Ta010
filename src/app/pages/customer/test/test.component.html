@@ -52,23 +52,26 @@
 <div class="exam-main" *ngIf="!loading && questions.length > 0">
   <!-- LEFT: QUESTIONS -->
   <div class="exam-wrapper" id="examWrapper">
-    <div class="section-group">
+    <div class="section-group" *ngFor="let section of questionSections">
       <div class="section-header">
-        <h2>{{ examData?.title }}<br>
-          <span class="section-sub">{{ examData?.description }}</span>
+        <h2>{{ section.title }}<br>
+          <span class="section-sub">{{ section.subtitle }}</span>
         </h2>
-        <span class="section-badge">{{ totalQuestions }} câu</span>
+        <span class="section-badge">{{ section.questions.length }} câu</span>
       </div>
       <div class="section-body">
         <div
           class="question-block"
-          *ngFor="let question of questions"
+          *ngFor="let question of section.questions"
           [id]="'q' + question.questionId">
+          <div class="passage-wrap" *ngIf="questionPassages[question.questionId]">
+            <div class="passage-box" [innerHTML]="questionPassages[question.questionId]"></div>
+          </div>
           <div class="q-header">
             <div class="q-num" [ngClass]="getQNumClass(question.questionId)">
               {{ question.questionNumber }}
             </div>
-            <div class="q-text" [innerHTML]="question.questionText"></div>
+            <div class="q-text" [innerHTML]="questionDisplayText[question.questionId] || question.questionText"></div>
           </div>
           <div class="options">
             <div
