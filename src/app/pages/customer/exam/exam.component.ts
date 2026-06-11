@@ -757,8 +757,7 @@ export class ExamComponent implements OnInit, OnDestroy {
       alert('Vui lòng mua gói để truy cập đề thi.');
       return;
     }
-    // Navigate to take exam (route is '/test')
-    this.router.navigate(['/test'], { queryParams: { examId: exam.examId } });
+    this.router.navigate(['/lam-bai'], { queryParams: { examId: exam.examId } });
   }
 
   getPackageFeatures(name: string): string[] {
