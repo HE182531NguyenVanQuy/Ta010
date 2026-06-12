@@ -26,7 +26,7 @@
 
 <div class="page-main">
   <!-- CASE 1: USER DOES NOT HAVE ACTIVE SUBSCRIPTION PACKAGE -->
-  <div class="pricing-wrapper fade-up" *ngIf="!hasActivePackage">
+  <div class="pricing-wrapper fade-up" *ngIf="!hasActivePackage && !selectedExamPackage">
     <div class="pricing-container">
       <div class="pricing-header">
         <div class="pricing-badge">
@@ -38,7 +38,14 @@
 
     <div class="pricing-grid price-5-cols">
       <div class="pricing-card" *ngFor="let pkg of packagesList" [class.featured]="pkg.name.includes('Chuyên Sâu')" [class.most-popular]="pkg.name.includes('Chuyên Sâu')">
-        <div class="pricing-card-inner">
+        <div
+          class="pricing-card-inner"
+          [class.selected]="selectedExamPackageId === pkg.packageId"
+          (click)="onSelectPackage(pkg)"
+          (keydown.enter)="onSelectPackage(pkg)"
+          (keydown.space)="onSelectPackage(pkg)"
+          role="button"
+          tabindex="0">
           <!-- Badge -->
           <div class="pricing-badge-wrapper" *ngIf="pkg.name.includes('Chuyên Sâu')">
             <span class="pricing-badge-text">🔥 BÁN CHẠY</span>
@@ -77,7 +84,7 @@
             <button
               type="button"
               class="btn-subscribe"
-              (click)="handlePackagePurchase(pkg)"
+              (click)="$event.stopPropagation(); handlePackagePurchase(pkg)"
               [disabled]="isProcessingPayment"
               [class.is-loading]="isProcessingPayment && selectedPackage?.packageId === pkg.packageId">
               <span class="btn-text">
@@ -171,9 +178,10 @@
       </div>
     </div>
   </div>
+</div>
 
-  <!-- CASE 2: SHOW EXAMS WHEN USER HAS ACTIVE SUBSCRIPTION -->
-  <div class="two-col-layout" [class.no-sidebar]="!showSidebar" *ngIf="hasActivePackage">
+<!-- CASE 2: SHOW EXAMS WHEN USER HAS ACTIVE SUBSCRIPTION -->
+  <div class="two-col-layout" [class.no-sidebar]="!showSidebar" *ngIf="hasActivePackage || selectedExamPackage">
     @if (showSidebar) {
       <aside class="sidebar">
         <div class="sidebar-panel fade-up">
@@ -245,6 +253,20 @@
     }
 
     <div class="exam-content">
+      <div class="package-select-panel fade-up" *ngIf="packagesList.length > 0">
+        <div class="panel-title">Chọn gói để xem đề</div>
+        <div class="package-chip-row">
+          <button
+            type="button"
+            class="package-chip"
+            *ngFor="let pkg of packagesList"
+            [class.active]="selectedExamPackageId === pkg.packageId"
+            (click)="onSelectPackage(pkg)">
+            {{ pkg.name }}
+          </button>
+        </div>
+      </div>
+
       @if (!loading && !errorMessage && examCardsMain.length > 0) {
         <div class="stats-banner fade-up">
           <div class="stat-item">
@@ -319,7 +341,11 @@
         </div>
       </div>
 
-      <div class="active-pkg-banner fade-up" *ngIf="hasActivePackage && activeUserPkg">
+      <div class="active-pkg-banner fade-up" *ngIf="selectedExamPackage">
+        <span>⭐ Đang xem đề của gói: <strong>{{ selectedExamPackageName }}</strong></span>
+      </div>
+
+      <div class="active-pkg-banner fade-up" *ngIf="!selectedExamPackage && hasActivePackage && activeUserPkg">
         <span>⭐ Bạn đang sử dụng gói: <strong>{{ activeUserPkg.packageName }}</strong> (Còn hạn đến {{ activeUserPkg.endDate | date: 'dd/MM/yyyy' }})</span>
       </div>
 

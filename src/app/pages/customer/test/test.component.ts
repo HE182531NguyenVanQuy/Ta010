@@ -3,9 +3,39 @@ import {
   ChangeDetectionStrategy, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import { ExamService } from '../../../services/exam.service';
 
 // Trạng thái của mỗi ô câu hỏi trong nav grid
-export type NavState = 'empty' | 'answered' | 'correct' | 'wrong';
+export type NavState = 'empty' | 'answered';
+
+export interface Question {
+  questionId: string;
+  questionNumber: number;
+  section?: string;
+  questionText: string;
+  optionA?: string;
+  optionB?: string;
+  optionC?: string;
+  optionD?: string;
+  correctAnswer?: string;
+  explanation?: string;
+}
+
+export interface ExamData {
+  examId: string;
+  title: string;
+  description?: string;
+  durationTime: number;
+  questionsCount?: number;
+}
+
+interface QuestionSection {
+  key: string;
+  title: string;
+  subtitle: string;
+  questions: Question[];
+}
 
 @Component({
   selector: 'app-test',
@@ -17,51 +47,69 @@ export type NavState = 'empty' | 'answered' | 'correct' | 'wrong';
 })
 export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
 
+  // ── API Data ────────────────────────────────────────────────
+  examData: ExamData | null = null;
+  questions: Question[] = [];
+  private passageOnlyQuestions: Question[] = [];
+  loading = true;
+  attemptId: string | null = null;
+  currentExamId = '';
+  modalVisible = false;
+  submitting = false;
+  submitted = false;
+  reviewMode = false;
+  correctCount = 0;
+  finalScore = 0;
+  private receivedApiScore = false;
+  scoringErrorMessage = '';
+
   // ── Câu trả lời người dùng ──────────────────────────────────
-  userAnswers: { [q: number]: string } = {};
+  userAnswers: { [questionId: string]: string } = {};
+  questionDisplayText: { [questionId: string]: string } = {};
+  questionPassages: { [questionId: string]: string } = {};
+  questionSections: QuestionSection[] = [];
 
-  // ── Trạng thái nav ô (1–40): empty | answered | correct | wrong
-  navStates: { [q: number]: NavState } = {};
+  // ── Trạng thái nav ô: empty | answered
+  navStates: { [questionId: string]: NavState } = {};
 
-  // ── Trạng thái class từng option: { 1: {A:'', B:'selected'...} }
-  optionStates: { [q: number]: { [opt: string]: string } } = {};
+  // ── Trạng thái class từng option: { questionId: {A:'', B:'selected'...} }
+  optionStates: { [questionId: string]: { [opt: string]: string } } = {};
 
   // ── Giải thích visible ──────────────────────────────────────
-  explVisible: { [q: number]: boolean } = {};
+  explVisible: { [questionId: string]: boolean } = {};
 
-  private readonly STORAGE_KEY = 'testExamProgress_v1';
+  private readonly STORAGE_KEY = 'examPracticeProgress_v1';
 
   private get storage(): Storage | null {
-    // In SSR / server environment, localStorage is not available.
-    // `typeof localStorage` is safe even if `localStorage` isn't defined.
     return typeof localStorage === 'undefined' ? null : localStorage;
   }
 
+  private get isBrowser(): boolean {
+    return typeof window !== 'undefined';
+  }
+
   // ── Chung ───────────────────────────────────────────────────
-  checked        = false;
-  showAllExpls   = false;
-  resultVisible  = false;
-  modalVisible   = false;
   savedProgress  = false;
 
   get saveLabel(): string { return this.savedProgress ? '💾 Đã lưu' : '💾 Lưu bài'; }
 
-  // ── Kết quả ─────────────────────────────────────────────────
-  score        = 0;
-  correctCount = 0;
-  wrongCount   = 0;
-  skipCount    = 0;
-
   // ── Timer ───────────────────────────────────────────────────
-  readonly TOTAL_SECS = 45 * 60;
-  secsLeft = this.TOTAL_SECS;
+  secsLeft = 45 * 60;
+
+  get durationMinutes(): number {
+    return this.examData?.durationTime ?? 45;
+  }
+
+  get totalSecs(): number {
+    return this.durationMinutes * 60;
+  }
 
   get timerDisplay(): string {
     const m = Math.floor(this.secsLeft / 60);
     const s = this.secsLeft % 60;
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
-  get timerBarWidth():  string  { return (this.secsLeft / this.TOTAL_SECS * 100) + '%'; }
+  get timerBarWidth():  string  { return (this.secsLeft / this.totalSecs * 100) + '%'; }
   get timerWarning():   boolean { return this.secsLeft <= 300 && this.secsLeft > 60; }
   get timerDanger():    boolean { return this.secsLeft <= 60; }
 
@@ -69,59 +117,131 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ── Tiến độ (computed) ──────────────────────────────────────
   get answeredCount(): number { return Object.keys(this.userAnswers).length; }
+  get totalQuestions(): number { return this.questions.length; }
   get remainCount():   number { return this.totalQuestions - this.answeredCount; }
-  get progressPct():   string { return Math.round(this.answeredCount / this.totalQuestions * 100) + '%'; }
-  get progressWidth(): string { return Math.round(this.answeredCount / this.totalQuestions * 100) + '%'; }
-
-  // ── Kết quả (computed) ──────────────────────────────────────
-  get resultScore(): string { return this.score.toFixed(2) + ' / 10'; }
-  get resultGrade(): string { return this.getGrade(); }
-  get resultEmoji(): string { return this.getEmoji(); }
-  get modalSub():    string {
-    return `Bạn trả lời đúng ${this.correctCount}/${this.totalQuestions} câu. Điểm số: ${this.score.toFixed(2)}/10`;
-  }
+  get wrongCount():    number { return Math.max(0, this.answeredCount - this.correctCount); }
+  get skippedCount():  number { return Math.max(0, this.totalQuestions - this.answeredCount); }
+  get scoreDisplay(): string { return this.finalScore.toFixed(2); }
+  get progressPct():   string { return this.totalQuestions > 0 ? Math.round(this.answeredCount / this.totalQuestions * 100) + '%' : '0%'; }
+  get progressWidth(): string { return this.totalQuestions > 0 ? Math.round(this.answeredCount / this.totalQuestions * 100) + '%' : '0%'; }
 
   // ── Danh sách số câu cho *ngFor ─────────────────────────────
-  readonly totalQuestions = 40;
-  readonly questionNums   = Array.from({ length: 40 }, (_, i) => i + 1);
+  get questionNums(): number[] {
+    return Array.from({ length: this.totalQuestions }, (_, i) => i + 1);
+  }
 
-  // ── Đáp án chuẩn ────────────────────────────────────────────
-  readonly ANSWERS: { [q: number]: string } = {
-     1:'B',  2:'C',  3:'C',  4:'B',
-     5:'B',  6:'D',  7:'B',  8:'B',
-     9:'C', 10:'B', 11:'A', 12:'C', 13:'B', 14:'D', 15:'A', 16:'A', 17:'B', 18:'D',
-    19:'A', 20:'B',
-    21:'A', 22:'A', 23:'B', 24:'C',
-    25:'C', 26:'D', 27:'C', 28:'D', 29:'C', 30:'B',
-    31:'D', 32:'C', 33:'D', 34:'B',
-    35:'D', 36:'C', 37:'A', 38:'A',
-    39:'D', 40:'C',
-  };
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
+    private examService: ExamService
+  ) {}
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  // ── Helper to convert index to letter (0->A, 1->B, etc) ─────
+  String = String;
+  getOptionLetter(index: number): string {
+    return String.fromCharCode(65 + index);
+  }
 
-  ngOnInit(): void    { this.loadProgress(); }
+  getQuestionOptions(question: Question): string[] {
+    return [question.optionA, question.optionB, question.optionC, question.optionD]
+      .filter((option): option is string => !!option);
+  }
+
+  getCorrectAnswer(question: Question): string {
+    return (question.correctAnswer ?? '').trim().toUpperCase();
+  }
+
+  isQuestionCorrect(question: Question): boolean {
+    const correctAnswer = this.getCorrectAnswer(question);
+    return !!correctAnswer && this.userAnswers[question.questionId] === correctAnswer;
+  }
+
+  getExplanationClass(question: Question): string {
+    if (!this.reviewMode) return '';
+    return this.isQuestionCorrect(question) ? 'explanation-correct' : 'explanation-wrong';
+  }
+
+  private getEmptyOptionState(question: Question): { [opt: string]: string } {
+    return this.getQuestionOptions(question).reduce((state, _option, index) => {
+      state[this.getOptionLetter(index)] = '';
+      return state;
+    }, {} as { [opt: string]: string });
+  }
+
+  ngOnInit(): void {
+    if (!this.isBrowser) {
+      this.loading = false;
+      return;
+    }
+
+    this.loadExamData();
+  }
   ngAfterViewInit():  void { this.startTimer(); }
   ngOnDestroy():      void { this.stopTimer(); }
+
+  // ── Load exam from API ──────────────────────────────────────
+  async loadExamData(): Promise<void> {
+    try {
+      this.loading = true;
+      
+      // Get exam ID from URL params or use default
+      const queryParams = this.route.snapshot.queryParamMap;
+      const examId = queryParams.get('examId') || 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+      this.currentExamId = examId;
+      
+      // Fetch exam with questions from API
+      const response = await this.examService.getExamWithQuestions(examId);
+      this.examData = response.data?.exam;
+      this.setQuestions(response.data?.questions || []);
+      
+      // Initialize state for each question
+      this.questions.forEach(q => {
+        this.navStates[q.questionId] = 'empty';
+        this.explVisible[q.questionId] = false;
+        this.optionStates[q.questionId] = this.getEmptyOptionState(q);
+      });
+
+      this.secsLeft = this.totalSecs;
+      //this.loadProgress();
+
+      await this.ensureAttempt().catch(error => {
+        console.warn('Could not create exam attempt while loading:', error);
+      });
+
+      this.cdr.markForCheck();
+    } catch (error) {
+      console.error('Error loading exam:', error);
+      // TODO: Show error message to user
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
+  }
 
   // ── Khởi tạo state sạch ─────────────────────────────────────
   initState(): void {
     this.savedProgress = false;
+    this.submitted = false;
+    this.reviewMode = false;
+    this.correctCount = 0;
+    this.finalScore = 0;
+    this.receivedApiScore = false;
+    this.scoringErrorMessage = '';
     this.userAnswers  = {};
     this.navStates    = {};
     this.optionStates = {};
     this.explVisible  = {};
-    for (let q = 1; q <= this.totalQuestions; q++) {
-      this.navStates[q]    = 'empty';
-      this.explVisible[q]  = false;
-      this.optionStates[q] = { A:'', B:'', C:'', D:'' };
-    }
+    this.questions.forEach(q => {
+      this.navStates[q.questionId]    = 'empty';
+      this.explVisible[q.questionId]  = false;
+      this.optionStates[q.questionId] = this.getEmptyOptionState(q);
+    });
+    this.rebuildQuestionDisplay(this.passageOnlyQuestions);
   }
 
   loadProgress(): void {
     const storage = this.storage;
     if (!storage) {
-      // Server-side rendering and other non-browser contexts.
       this.initState();
       return;
     }
@@ -135,7 +255,6 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
     try {
       const data = JSON.parse(raw);
       if (!data || data.saved !== true) {
-        // Only restore progress if the user explicitly saved it before.
         this.initState();
         return;
       }
@@ -143,7 +262,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       this.savedProgress = true;
 
       const savedAt = typeof data.savedAt === 'number' ? data.savedAt : null;
-      const savedSecsLeft = typeof data.secsLeft === 'number' ? data.secsLeft : this.TOTAL_SECS;
+      const savedSecsLeft = typeof data.secsLeft === 'number' ? data.secsLeft : this.totalSecs;
       const elapsed = savedAt ? Math.floor((Date.now() - savedAt) / 1000) : 0;
       this.secsLeft = Math.max(0, savedSecsLeft - elapsed);
 
@@ -151,14 +270,6 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       this.navStates    = data.navStates    ?? {};
       this.optionStates = data.optionStates ?? {};
       this.explVisible  = data.explVisible  ?? {};
-
-      this.checked       = !!data.checked;
-      this.score         = typeof data.score === 'number' ? data.score : 0;
-      this.correctCount  = typeof data.correctCount === 'number' ? data.correctCount : 0;
-      this.wrongCount    = typeof data.wrongCount === 'number' ? data.wrongCount : 0;
-      this.skipCount     = typeof data.skipCount === 'number' ? data.skipCount : 0;
-      this.resultVisible = !!data.resultVisible;
-      this.modalVisible  = !!data.modalVisible;
 
       if (Object.keys(this.navStates).length === 0) {
         this.initState();
@@ -188,13 +299,6 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       navStates: this.navStates,
       optionStates: this.optionStates,
       explVisible: this.explVisible,
-      checked: this.checked,
-      score: this.score,
-      correctCount: this.correctCount,
-      wrongCount: this.wrongCount,
-      skipCount: this.skipCount,
-      resultVisible: this.resultVisible,
-      modalVisible: this.modalVisible,
     };
 
     try {
@@ -216,150 +320,626 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ── Chọn đáp án ─────────────────────────────────────────────
-  selectOpt(qNum: number, opt: string): void {
-    if (this.checked) return;
+  async selectOpt(questionId: string, opt: string): Promise<void> {
+    if (this.submitted || this.reviewMode) return;
 
     // Reset tất cả option của câu này → set option được chọn
-    this.optionStates[qNum] = { A:'', B:'', C:'', D:'' };
-    this.optionStates[qNum][opt] = 'selected';
+    const question = this.questions.find(q => q.questionId === questionId);
+    this.optionStates[questionId] = question ? this.getEmptyOptionState(question) : {};
+    this.optionStates[questionId][opt] = 'selected';
 
     // Lưu đáp án
-    this.userAnswers[qNum] = opt;
+    this.userAnswers[questionId] = opt;
 
-    // ✅ Đổi màu ô nav ngay lập tức → xanh dương
-    this.navStates[qNum] = 'answered';
+    // ✅ Mark as answered (only "answered" state, no correct/wrong during exam)
+    this.navStates[questionId] = 'answered';
 
     // Khi user thay đổi đáp án thì cần bấm "Lưu bài" mới lưu lại.
     this.savedProgress = false;
+
+    // Submit answer to API
+    if (this.attemptId) {
+      try {
+        await this.examService.submitAnswer(this.attemptId, {
+          questionId: questionId,
+          userAnswer: opt
+        });
+      } catch (error) {
+        console.error('Error submitting answer:', error);
+        // TODO: Show error message to user
+      }
+    }
 
     this.cdr.markForCheck();
   }
 
   // ── CSS class cho option ────────────────────────────────────
-  getOptionClass(qNum: number, opt: string): string {
-    return this.optionStates[qNum]?.[opt] ?? '';
+  getOptionClass(questionId: string, opt: string, question?: Question): string {
+    if (this.reviewMode && question) {
+      const correctAnswer = this.getCorrectAnswer(question);
+      const selectedAnswer = this.userAnswers[questionId];
+
+      if (correctAnswer === opt) return 'reveal-correct';
+      if (selectedAnswer === opt && selectedAnswer !== correctAnswer) return 'wrong';
+    }
+
+    return this.optionStates[questionId]?.[opt] ?? '';
+  }
+
+  private async ensureAttempt(): Promise<void> {
+    if (this.attemptId) return;
+
+    const queryParams = this.route.snapshot.queryParamMap;
+    const userId = queryParams.get('userId') || this.storage?.getItem('userId');
+    const examId = this.currentExamId || queryParams.get('examId') || this.examData?.examId;
+
+    if (!examId) {
+      throw new Error('Không tìm thấy mã đề thi để tạo lượt làm bài chấm điểm.');
+    }
+
+    const attemptResponse = await this.examService.startExamAttempt({
+      examId,
+      userId: userId || null
+    });
+    const attemptPayload = attemptResponse as any;
+    const attempt = attemptPayload.data ?? attemptPayload;
+    this.attemptId = attempt.userExamAttemptId;
+  }
+
+  private async syncAnswersToAttempt(): Promise<void> {
+    if (!this.attemptId) return;
+
+    for (const [questionId, userAnswer] of Object.entries(this.userAnswers)) {
+      await this.examService.submitAnswer(this.attemptId, {
+        questionId,
+        userAnswer
+      });
+    }
   }
 
   // ── CSS class cho ô nav ─────────────────────────────────────
-  getNavClass(qNum: number): string {
-    switch (this.navStates[qNum]) {
+  getNavClass(questionId: string): string {
+    if (this.reviewMode) {
+      const question = this.questions.find(q => q.questionId === questionId);
+      if (!question) return '';
+      return this.isQuestionCorrect(question) ? 'nav-correct' : 'nav-wrong';
+    }
+
+    switch (this.navStates[questionId]) {
       case 'answered': return 'nav-answered';
-      case 'correct':  return 'nav-correct';
-      case 'wrong':    return 'nav-wrong';
       default:         return '';
     }
   }
 
   // Class cho badge số câu bên trái
-  getQNumClass(qNum: number): string {
-    switch (this.navStates[qNum]) {
+  getQNumClass(questionId: string): string {
+    if (this.reviewMode) {
+      const question = this.questions.find(q => q.questionId === questionId);
+      if (!question) return '';
+      return this.isQuestionCorrect(question) ? 'correct-q' : 'wrong-q';
+    }
+
+    switch (this.navStates[questionId]) {
       case 'answered': return 'answered';
-      case 'correct':  return 'correct-q';
-      case 'wrong':    return 'wrong-q';
       default:         return '';
     }
   }
 
   // ── Scroll đến câu hỏi ──────────────────────────────────────
-  scrollToQ(qNum: number): void {
-    document.getElementById('q' + qNum)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  scrollToQ(questionId: string): void {
+    document.getElementById('q' + questionId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  // ── Kiểm tra toàn bộ đáp án ─────────────────────────────────
-  checkAllAnswers(): void {
-    // After checking, current state is not automatically saved.
-    this.savedProgress = false;
+  // ── Nộp bài thi ────────────────────────────────────────────
+  async submitExam(): Promise<void> {
+    if (this.submitting || this.submitted) return;
 
-    this.checked = true;
-    let correct = 0, wrong = 0;
+    try {
+      this.submitting = true;
+      this.modalVisible = true;
+      this.scoringErrorMessage = '';
+      this.cdr.markForCheck();
 
-    for (let q = 1; q <= this.totalQuestions; q++) {
-      const correctOpt = this.ANSWERS[q];
-      const userOpt    = this.userAnswers[q];
+      await this.ensureAttempt();
+      await this.syncAnswersToAttempt();
 
-      this.optionStates[q] = { A:'', B:'', C:'', D:'' };
+      const result = await this.examService.submitExam(this.attemptId!, {
+        userAnswers: this.userAnswers
+      });
+      const resultPayload = result as any;
+      const submittedAttempt = resultPayload.data ?? resultPayload;
+      this.applySubmittedAttempt(submittedAttempt);
+    } catch (error) {
+      console.error('Error submitting exam:', error);
+      this.scoringErrorMessage = error instanceof Error
+        ? error.message
+        : 'Không nộp được bài lên hệ thống chấm điểm.';
+    } finally {
+      this.submitting = false;
+      if (this.receivedApiScore) {
+        this.submitted = true;
+        this.stopTimer();
+        this.clearProgress();
+      }
+      this.cdr.markForCheck();
+    }
+  }
 
-      if (userOpt) {
-        if (userOpt === correctOpt) {
-          correct++;
-          this.optionStates[q][userOpt]    = 'correct';
-          this.navStates[q]                = 'correct';
-        } else {
-          wrong++;
-          this.optionStates[q][userOpt]    = 'wrong';
-          this.optionStates[q][correctOpt] = 'reveal-correct';
-          this.navStates[q]                = 'wrong';
-        }
-      } else {
-        this.optionStates[q][correctOpt] = 'reveal-correct';
-        // navState giữ 'empty' (chưa trả lời)
+  private applySubmittedAttempt(submittedAttempt: any): void {
+    const submittedQuestions = submittedAttempt?.questions ?? submittedAttempt?.Questions;
+    if (Array.isArray(submittedQuestions) && submittedQuestions.length > 0) {
+      const questionsById = new Map<string, Question>(
+        submittedQuestions.map((question: any) => [
+          question.questionId ?? question.QuestionId,
+          this.normalizeQuestion(question)
+        ])
+      );
+      this.questions = this.sortQuestions(this.questions.map(question => {
+        const updated = questionsById.get(question.questionId);
+        if (!updated) return question;
+        return {
+          ...question,
+          ...updated,
+          correctAnswer: updated.correctAnswer || question.correctAnswer,
+          explanation: updated.explanation || question.explanation,
+        };
+      }));
+      this.rebuildQuestionDisplay(this.passageOnlyQuestions);
+    }
+
+    const correctAnswers = submittedAttempt?.correctAnswers ?? submittedAttempt?.CorrectAnswers;
+    this.correctCount = typeof correctAnswers === 'number' ? correctAnswers : 0;
+
+    const rawScore = Number(submittedAttempt?.score ?? submittedAttempt?.Score);
+    this.finalScore = Number.isFinite(rawScore)
+      ? (rawScore > 10 ? rawScore / 10 : rawScore)
+      : 0;
+    this.receivedApiScore = true;
+  }
+
+  private normalizeQuestion(question: any): Question {
+    const correctAnswer = question.correctAnswer ?? question.CorrectAnswer;
+    return {
+      questionId: question.questionId ?? question.QuestionId,
+      questionNumber: question.questionNumber ?? question.QuestionNumber,
+      section: question.section ?? question.Section,
+      questionText: question.questionText ?? question.QuestionText,
+      optionA: question.optionA ?? question.OptionA,
+      optionB: question.optionB ?? question.OptionB,
+      optionC: question.optionC ?? question.OptionC,
+      optionD: question.optionD ?? question.OptionD,
+      correctAnswer: typeof correctAnswer === 'string' ? correctAnswer.trim().toUpperCase() : correctAnswer,
+      explanation: question.explanation ?? question.Explanation,
+    };
+  }
+
+  private setQuestions(rawQuestions: Question[]): void {
+    const sortedQuestions = this.sortQuestions(rawQuestions);
+    this.passageOnlyQuestions = sortedQuestions.filter(question => !this.isAnswerableQuestion(question));
+    this.questions = sortedQuestions.filter(question => this.isAnswerableQuestion(question));
+    this.rebuildQuestionDisplay(this.passageOnlyQuestions);
+  }
+
+  private isAnswerableQuestion(question: Question): boolean {
+    return this.getQuestionOptions(question).length > 0;
+  }
+
+  private sortQuestions(questions: Question[]): Question[] {
+    return [...questions].sort((left, right) => {
+      const leftNumber = Number(left.questionNumber);
+      const rightNumber = Number(right.questionNumber);
+
+      if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && leftNumber !== rightNumber) {
+        return leftNumber - rightNumber;
       }
 
-      this.explVisible[q] = true;
-    }
+      if (Number.isFinite(leftNumber) !== Number.isFinite(rightNumber)) {
+        return Number.isFinite(leftNumber) ? -1 : 1;
+      }
 
-    const skip        = this.totalQuestions - correct - wrong;
-    this.score        = parseFloat(((correct / this.totalQuestions) * 10).toFixed(2));
-    this.correctCount = correct;
-    this.wrongCount   = wrong;
-    this.skipCount    = skip;
-
-    this.resultVisible = true;
-    this.modalVisible  = true;
-
-    this.stopTimer();
-    this.cdr.markForCheck();
+      return String(left.questionId).localeCompare(String(right.questionId));
+    });
   }
 
-  // ── Hiện/ẩn giải thích ──────────────────────────────────────
-  toggleAllExplanations(): void {
-    this.showAllExpls = !this.showAllExpls;
-    for (let q = 1; q <= this.totalQuestions; q++) {
-      this.explVisible[q] = this.showAllExpls;
+  private rebuildQuestionDisplay(passageOnlyQuestions: Question[]): void {
+    this.questionDisplayText = {};
+    this.questionPassages = {};
+
+    this.attachStandalonePassages(passageOnlyQuestions);
+    this.extractRepeatedPassagesFromAnswerableQuestions();
+    this.questionSections = this.buildQuestionSections();
+  }
+
+  private attachStandalonePassages(passageOnlyQuestions: Question[]): void {
+    const readingPassages = this.sortQuestions(passageOnlyQuestions.filter(question =>
+      this.isReadingSection(question.section) || this.looksLikePassage(question.questionText)
+    ));
+
+    for (const [index, passage] of readingPassages.entries()) {
+      const target = this.findFixedPassageTarget(passage, index) ?? this.findFirstQuestionForPassage(passage);
+      if (!target || this.questionPassages[target.questionId]) continue;
+
+      this.questionPassages[target.questionId] = passage.questionText;
     }
+  }
+
+  private findFixedPassageTarget(passage: Question, index: number): Question | undefined {
+    const ordinal =
+      this.extractReadingOrdinal(`${passage.section || ''} ${passage.questionText || ''}`) ??
+      this.inferStandalonePassageOrdinal(passage) ??
+      (index + 1);
+
+    const startQuestionByOrdinal: Record<number, number> = {
+      1: 25,
+      2: 31,
+    };
+    const startQuestionNumber = startQuestionByOrdinal[ordinal];
+
+    if (!startQuestionNumber) return undefined;
+    return this.questions.find(question => Number(question.questionNumber) === startQuestionNumber);
+  }
+
+  private findReadingGroupTargets(): Question[] {
+    const sectionTargets = this.groupConsecutiveQuestionsBySection(this.questions)
+      .filter(group =>
+        !!this.normalizeSection(group[0]?.section) &&
+        this.isReadingSection(group[0]?.section)
+      )
+      .map(group => group[0])
+      .filter((question): question is Question => !!question);
+
+    const repeatedTextTargets = this.findRepeatedPassageGroupTargets();
+    const seen = new Set<string>();
+
+    return [...sectionTargets, ...repeatedTextTargets].filter(question => {
+      if (seen.has(question.questionId)) return false;
+      seen.add(question.questionId);
+      return true;
+    });
+  }
+
+  private findRepeatedPassageGroupTargets(): Question[] {
+    const targets: Question[] = [];
+    let index = 0;
+
+    while (index < this.questions.length - 1) {
+      const passage = this.extractSharedPassageFromRepeatedText(
+        this.questions.slice(index, index + 2)
+      );
+
+      if (!passage) {
+        index++;
+        continue;
+      }
+
+      targets.push(this.questions[index]);
+
+      let end = index + 2;
+      while (
+        end < this.questions.length &&
+        this.extractSharedPassageFromRepeatedText(this.questions.slice(index, end + 1))
+      ) {
+        end++;
+      }
+
+      index = end;
+    }
+
+    return targets;
+  }
+
+  private findFirstQuestionForPassage(passage: Question): Question | undefined {
+    const passageNumber = Number(passage.questionNumber);
+    const section = this.normalizeSection(passage.section);
+    const passageOrdinal =
+      this.extractReadingOrdinal(`${passage.section || ''} ${passage.questionText || ''}`) ??
+      this.inferStandalonePassageOrdinal(passage);
+    const readingGroups = this.findReadingQuestionGroups();
+
+    if (passageOrdinal !== null) {
+      const ordinalGroup = readingGroups.find(group => group.ordinal === passageOrdinal);
+      if (ordinalGroup?.questions[0]) return ordinalGroup.questions[0];
+    }
+
+    if (section) {
+      const sameSection = this.questions.find(question =>
+        this.normalizeSection(question.section) === section
+      );
+      if (sameSection) return sameSection;
+    }
+
+    if (Number.isFinite(passageNumber)) {
+      const laterQuestion = this.questions.find(question => Number(question.questionNumber) >= passageNumber);
+      if (laterQuestion) return laterQuestion;
+    }
+
+    return readingGroups[0]?.questions[0] ?? this.questions[0];
+  }
+
+  private findReadingQuestionGroups(): { ordinal: number | null; questions: Question[] }[] {
+    return this.buildQuestionGroups()
+      .filter(group =>
+        this.isReadingSection(group.questions[0]?.section) ||
+        this.extractReadingOrdinal(group.title) !== null ||
+        group.questions.some(question => this.looksLikePassage(question.questionText))
+      )
+      .map(group => ({
+        ordinal: this.extractReadingOrdinal(group.title),
+        questions: group.questions,
+      }));
+  }
+
+  private extractRepeatedPassagesFromAnswerableQuestions(): void {
+    for (const question of this.questions) {
+      this.questionDisplayText[question.questionId] = question.questionText;
+    }
+
+    const groups = this.groupConsecutiveQuestionsBySection(this.questions);
+
+    for (const group of groups) {
+      const passage = this.extractSharedPassage(group);
+
+      for (const question of group) {
+        this.questionDisplayText[question.questionId] = passage
+          ? this.stripSharedPassage(question.questionText, passage)
+          : question.questionText;
+      }
+
+      if (passage && group[0] && !this.questionPassages[group[0].questionId]) {
+        this.questionPassages[group[0].questionId] = passage;
+      }
+    }
+
+    this.extractRepeatedPassagesFromAdjacentQuestions();
+  }
+
+  private extractRepeatedPassagesFromAdjacentQuestions(): void {
+    let index = 0;
+
+    while (index < this.questions.length - 1) {
+      let end = index + 1;
+      let bestPassage: string | undefined;
+
+      while (end < this.questions.length) {
+        const group = this.questions.slice(index, end + 1);
+        const passage = this.extractSharedPassageFromRepeatedText(group);
+        if (!passage) break;
+
+        bestPassage = passage;
+        end++;
+      }
+
+      if (bestPassage) {
+        const group = this.questions.slice(index, end);
+        const firstQuestion = group[0];
+
+        if (firstQuestion && !this.questionPassages[firstQuestion.questionId]) {
+          this.questionPassages[firstQuestion.questionId] = bestPassage;
+        }
+
+        for (const question of group) {
+          this.questionDisplayText[question.questionId] = this.stripSharedPassage(question.questionText, bestPassage);
+        }
+
+        index = end;
+      } else {
+        index++;
+      }
+    }
+  }
+
+  private groupConsecutiveQuestionsBySection(questions: Question[]): Question[][] {
+    const groups: Question[][] = [];
+
+    questions.forEach(question => {
+      const currentGroup = groups[groups.length - 1];
+      const currentSection = this.normalizeSection(currentGroup?.[0]?.section);
+      const questionSection = this.normalizeSection(question.section);
+
+      if (!currentGroup || currentSection !== questionSection) {
+        groups.push([question]);
+      } else {
+        currentGroup.push(question);
+      }
+    });
+
+    return groups;
+  }
+
+  private buildQuestionSections(): QuestionSection[] {
+    return this.buildQuestionGroups().map(group => ({
+      key: group.key,
+      title: group.title,
+      subtitle: `Câu ${group.questions[0].questionNumber} - ${group.questions[group.questions.length - 1].questionNumber}`,
+      questions: group.questions,
+    }));
+  }
+
+  private buildQuestionGroups(): { key: string; title: string; questions: Question[] }[] {
+    const groups: { key: string; title: string; questions: Question[] }[] = [];
+
+    for (const question of this.questions) {
+      const key = this.getQuestionSectionKey(question);
+      const currentGroup = groups[groups.length - 1];
+
+      if (!currentGroup || currentGroup.key !== key) {
+        groups.push({
+          key,
+          title: this.getQuestionSectionTitle(question),
+          questions: [question],
+        });
+      } else {
+        currentGroup.questions.push(question);
+      }
+    }
+
+    return groups;
+  }
+
+  private getQuestionSectionKey(question: Question): string {
+    const section = this.normalizeSection(question.section);
+    if (section) return section;
+
+    return this.getInferredQuestionType(question.questionNumber);
+  }
+
+  private getQuestionSectionTitle(question: Question): string {
+    const section = (question.section || '').trim();
+    if (section) return section;
+
+    const labels: Record<string, string> = {
+      pronunciation: 'Phần phát âm và trọng âm',
+      grammar: 'Phần ngữ pháp và từ vựng',
+      communication: 'Phần giao tiếp',
+      synonym: 'Phần đồng nghĩa - trái nghĩa',
+      cloze: 'Bài đọc 1 - Điền từ',
+      reading: 'Bài đọc 2 - Đọc hiểu',
+      rewrite: 'Phần viết lại câu',
+      other: 'Phần câu hỏi khác',
+    };
+
+    return labels[this.getInferredQuestionType(question.questionNumber)] ?? labels['other'];
+  }
+
+  private getInferredQuestionType(questionNumber: number): string {
+    const number = Number(questionNumber);
+
+    if (number >= 1 && number <= 4) return 'pronunciation';
+    if (number >= 5 && number <= 18) return 'grammar';
+    if (number >= 19 && number <= 20) return 'communication';
+    if (number >= 21 && number <= 24) return 'synonym';
+    if (number >= 25 && number <= 30) return 'cloze';
+    if (number >= 31 && number <= 34) return 'reading';
+    if (number >= 35 && number <= 40) return 'rewrite';
+
+    return 'other';
+  }
+
+  private normalizeSection(section?: string): string {
+    return (section || '').trim().toLowerCase();
+  }
+
+  private extractSharedPassage(questions: Question[]): string | undefined {
+    if (questions.length < 2) return undefined;
+
+    const texts = questions.map(question => question.questionText || '').filter(Boolean);
+    if (texts.length < 2) return undefined;
+
+    const commonPrefix = this.getCommonPrefix(texts).trim();
+    const looksLikeReading = this.isReadingSection(questions[0]?.section);
+
+    if (!looksLikeReading && commonPrefix.length < 250) return undefined;
+    if (commonPrefix.length < 120) return undefined;
+
+    const safePrefix = this.trimToReadableBoundary(commonPrefix);
+    return safePrefix.length >= 120 ? safePrefix : undefined;
+  }
+
+  private extractSharedPassageFromRepeatedText(questions: Question[]): string | undefined {
+    if (questions.length < 2) return undefined;
+
+    const texts = questions.map(question => question.questionText || '').filter(Boolean);
+    if (texts.length < 2) return undefined;
+
+    const commonPrefix = this.getCommonPrefix(texts).trim();
+    if (commonPrefix.length < 120) return undefined;
+
+    const safePrefix = this.trimToReadableBoundary(commonPrefix);
+    return safePrefix.length >= 120 ? safePrefix : undefined;
+  }
+
+  private isReadingSection(section?: string): boolean {
+    return /(reading|passage|đọc|doc|bài đọc|bai doc)/i.test(section || '');
+  }
+
+  private extractReadingOrdinal(text?: string): number | null {
+    const value = (text || '').toLowerCase();
+    const match = value.match(/(?:bài\s*đọc|bai\s*doc|reading|passage)\s*(\d+)/i);
+    if (!match) return null;
+
+    const ordinal = Number(match[1]);
+    return Number.isFinite(ordinal) ? ordinal : null;
+  }
+
+  private inferStandalonePassageOrdinal(passage: Question): number | null {
+    const passageNumber = Number(passage.questionNumber);
+
+    if (!this.looksLikePassage(passage.questionText)) return null;
+    if (!Number.isFinite(passageNumber)) return null;
+
+    return passageNumber > 0 && passageNumber <= 5 ? passageNumber : null;
+  }
+
+  private looksLikePassage(text?: string): boolean {
+    const value = (text || '').trim();
+    return value.length >= 120 || /(read the passage|đọc đoạn văn|bài đọc|passage)/i.test(value);
+  }
+
+  private getCommonPrefix(texts: string[]): string {
+    let prefix = texts[0];
+
+    for (const text of texts.slice(1)) {
+      let index = 0;
+      while (index < prefix.length && index < text.length && prefix[index] === text[index]) {
+        index++;
+      }
+      prefix = prefix.slice(0, index);
+      if (!prefix) break;
+    }
+
+    return prefix;
+  }
+
+  private trimToReadableBoundary(text: string): string {
+    const boundaries = ['</p>', '<br>', '<br/>', '<br />', '\n\n', '\n', '. ', '? ', '! '];
+    let boundaryIndex = -1;
+    let boundaryLength = 0;
+
+    boundaries.forEach(boundary => {
+      const index = text.lastIndexOf(boundary);
+      if (index > boundaryIndex) {
+        boundaryIndex = index;
+        boundaryLength = boundary.length;
+      }
+    });
+
+    if (boundaryIndex < 120) return text.trim();
+    return text.slice(0, boundaryIndex + boundaryLength).trim();
+  }
+
+  private stripSharedPassage(questionText: string, passage: string): string {
+    const stripped = questionText.startsWith(passage)
+      ? questionText.slice(passage.length).trim()
+      : questionText.replace(passage, '').trim();
+
+    return stripped || questionText;
+  }
+
+  confirmResult(): void {
+    this.modalVisible = false;
+    this.reviewMode = true;
+
+    this.questions.forEach(question => {
+      this.explVisible[question.questionId] = true;
+    });
+
     this.cdr.markForCheck();
   }
 
   // ── Làm lại ─────────────────────────────────────────────────
   resetExam(): void {
-    this.checked       = false;
-    this.showAllExpls  = false;
-    this.score         = 0;
-    this.correctCount  = 0;
-    this.wrongCount    = 0;
-    this.skipCount     = 0;
-    this.resultVisible = false;
-    this.modalVisible  = false;
     this.initState();
+    this.modalVisible = false;
+    this.submitting = false;
     this.clearProgress();
     this.resetTimer();
     this.cdr.markForCheck();
   }
 
-  submitExam(): void { this.checkAllAnswers(); }
-
-  closeModal(): void {
-    this.modalVisible = false;
-    this.cdr.markForCheck();
-  }
-
-  // ── Grade / Emoji ────────────────────────────────────────────
-  getGrade(): string {
-    if (this.score >= 8)   return '🏆 Xuất sắc!';
-    if (this.score >= 6.5) return '🎉 Khá tốt!';
-    if (this.score >= 5)   return '📚 Cần cố gắng thêm';
-    return '💪 Cần ôn luyện nhiều hơn';
-  }
-
-  getEmoji(): string {
-    if (this.score >= 8)   return '🏆';
-    if (this.score >= 6.5) return '🎉';
-    if (this.score >= 5)   return '😊';
-    return '💪';
-  }
-
   // ── Timer ───────────────────────────────────────────────────
   startTimer(): void {
+    if (this.timerInterval) return;
+
     this.timerInterval = setInterval(() => {
       this.secsLeft = Math.max(0, this.secsLeft - 1);
       if (this.secsLeft <= 0) {
@@ -379,7 +959,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
 
   resetTimer(): void {
     this.stopTimer();
-    this.secsLeft = this.TOTAL_SECS;
+    this.secsLeft = this.totalSecs;
     this.startTimer();
   }
 }
