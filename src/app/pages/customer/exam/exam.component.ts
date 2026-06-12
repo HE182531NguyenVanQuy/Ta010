@@ -130,16 +130,49 @@ export class ExamComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.route.queryParams.subscribe(params => {
-        if (params['payment'] === 'success') {
-          alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
-          // Clean query params from URL
-          this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: { payment: null },
-            queryParamsHandling: 'merge'
-          });
-          // Poll for update: 6 attempts × 2 seconds = 12 second max wait
-          this.pollSubscription(6, 2000);
+        if (params['payment'] === 'success' || (params['code'] === '00' && params['orderCode'])) {
+          const orderCode = params['orderCode'];
+          
+          if (orderCode) {
+            // Manually verify return for local testing bypassing webhook
+            this.paymentService.verifyReturn(orderCode).subscribe({
+              next: () => {
+                alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
+                this.router.navigate([], {
+                  relativeTo: this.route,
+                  queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+                  queryParamsHandling: 'merge'
+                });
+                // Poll just in case, but it should be instantaneous now
+                this.pollSubscription(3, 1000);
+              },
+              error: (err) => {
+                console.error('Error verifying return:', err);
+                this.router.navigate([], {
+                  relativeTo: this.route,
+                  queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+                  queryParamsHandling: 'merge'
+                });
+                this.pollSubscription(6, 2000);
+              }
+            });
+          } else {
+            alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
+            // Clean query params from URL
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { payment: null },
+              queryParamsHandling: 'merge'
+            });
+            // Poll for update: 6 attempts × 2 seconds = 12 second max wait
+            this.pollSubscription(6, 2000);
+          }
+        } else if (params['payment'] === 'cancel' || params['cancel'] === 'true') {
+           this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+              queryParamsHandling: 'merge'
+            });
         }
       })
     );
@@ -807,15 +840,22 @@ export class ExamComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      // Call checkout API for paid packages
+      // Normal checkout (now returns UserPackage directly for instant access)
       this.paymentService.checkout(pkg.packageId, 'bank_transfer').subscribe({
-        next: (response) => {
-          console.log('Checkout initiated:', response);
+        next: (response: any) => {
           if (response.checkoutUrl) {
             window.location.href = response.checkoutUrl;
+          } else if (response.userPackageId) {
+            alert('Thanh toán thành công! Gói học tập của bạn đã được kích hoạt.');
+            this.isProcessingPayment = false;
+            this.selectedPackage = null;
+            this.checkUserSubscription();
+          } else {
+            this.isProcessingPayment = false;
+            this.selectedPackage = null;
+            this.cdr.markForCheck();
+            alert('Lỗi: Không nhận được thông tin gói hoặc link thanh toán.');
           }
-          this.isProcessingPayment = false;
-          this.cdr.markForCheck();
         },
         error: (err) => {
           console.error('Error during checkout:', err);

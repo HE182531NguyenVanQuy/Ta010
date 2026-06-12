@@ -15,10 +15,19 @@
     <h1>Kho Đề Thi <span>Vào Lớp 10</span></h1>
     <p>Chọn đề phù hợp và bắt đầu luyện tập ngay.</p>
     <div class="hero-stats-row">
-      <div><div class="hs-num">{{ catalogTotalCount }}</div><div class="hs-label">Tổng đề thi</div></div>
-      <div><div class="hs-num">{{ examCardsMain.length }}</div><div class="hs-label">Đề trên trang</div></div>
+      <div>
+        <div class="hs-num">{{ catalogTotalCount }}</div>
+        <div class="hs-label">Tổng đề thi</div>
+      </div>
+      <div>
+        <div class="hs-num">{{ examCardsMain.length }}</div>
+        <div class="hs-label">Đề trên trang</div>
+      </div>
       @if (lastPage > 1) {
-        <div><div class="hs-num">{{ currentPage }}/{{ lastPage }}</div><div class="hs-label">Trang</div></div>
+      <div>
+        <div class="hs-num">{{ currentPage }}/{{ lastPage }}</div>
+        <div class="hs-label">Trang</div>
+      </div>
       }
     </div>
   </div>
@@ -26,248 +35,207 @@
 
 <div class="page-main">
   <!-- CASE 1: USER DOES NOT HAVE ACTIVE SUBSCRIPTION PACKAGE -->
-  <div class="pricing-wrapper fade-up" *ngIf="!hasActivePackage && !selectedExamPackage">
+  <div class="pricing-wrapper fade-up" *ngIf="!hasActivePackage">
     <div class="pricing-container">
       <div class="pricing-header">
         <div class="pricing-badge">
           <span style="font-size: 0.9rem;">✨</span> NÂNG CẤP TÀI KHOẢN
         </div>
         <h2>Mở Khóa Kho Đề Thi <span>Luyện Thi Lớp 10</span></h2>
-        <p>Chọn gói phù hợp để truy cập ngay ngân hàng đề thi chuẩn cấu trúc năm 2026, chấm điểm tự động và đáp án giải thích chi tiết.</p>
+        <p>Chọn gói phù hợp để truy cập ngay ngân hàng đề thi chuẩn cấu trúc năm 2026, chấm điểm tự động và đáp án giải
+          thích chi tiết.</p>
       </div>
 
-    <div class="pricing-grid price-5-cols">
-      <div class="pricing-card" *ngFor="let pkg of packagesList" [class.featured]="pkg.name.includes('Chuyên Sâu')" [class.most-popular]="pkg.name.includes('Chuyên Sâu')">
-        <div
-          class="pricing-card-inner"
-          [class.selected]="selectedExamPackageId === pkg.packageId"
-          (click)="onSelectPackage(pkg)"
-          (keydown.enter)="onSelectPackage(pkg)"
-          (keydown.space)="onSelectPackage(pkg)"
-          role="button"
-          tabindex="0">
-          <!-- Badge -->
-          <div class="pricing-badge-wrapper" *ngIf="pkg.name.includes('Chuyên Sâu')">
-            <span class="pricing-badge-text">🔥 BÁN CHẠY</span>
-          </div>
-
-          <!-- Header Section -->
-          <div class="pricing-card-header">
-            <div class="package-header-top">
-              <h3 class="package-name">{{ pkg.name }}</h3>
+      <div class="pricing-grid price-5-cols">
+        <div class="pricing-card" *ngFor="let pkg of packagesList" [class.featured]="pkg.name.includes('Chuyên Sâu')"
+          [class.most-popular]="pkg.name.includes('Chuyên Sâu')">
+          <div class="pricing-card-inner">
+            <!-- Badge -->
+            <div class="pricing-badge-wrapper" *ngIf="pkg.name.includes('Chuyên Sâu')">
+              <span class="pricing-badge-text">🔥 BÁN CHẠY</span>
             </div>
-            <p class="package-desc">{{ pkg.description }}</p>
-          </div>
 
-          <!-- Price Section -->
-          <div class="pricing-card-price">
-            <div class="price-block">
-              <span class="price-val" *ngIf="pkg.price === 0">Miễn phí</span>
-              <span class="price-val" *ngIf="pkg.price > 0">{{ pkg.price | number:'1.0-0' }}</span>
-              <span class="price-currency" *ngIf="pkg.price > 0">đ</span>
+            <!-- Header Section -->
+            <div class="pricing-card-header">
+              <div class="package-header-top">
+                <h3 class="package-name">{{ pkg.name }}</h3>
+              </div>
+              <p class="package-desc">{{ pkg.description }}</p>
             </div>
-            <span class="price-period">{{ pkg.durationTime }} ngày</span>
-          </div>
 
-          <!-- Features -->
-          <div class="pricing-card-features">
-            <ul class="features-list">
-              <li *ngFor="let item of getPackageFeatures(pkg.name)" class="feature-item">
-                <span class="feature-check">✓</span>
-                <span class="feature-text">{{ item }}</span>
-              </li>
-            </ul>
-          </div>
+            <!-- Price Section -->
+            <div class="pricing-card-price">
+              <div class="price-block">
+                <span class="price-val" *ngIf="pkg.price === 0">Miễn phí</span>
+                <span class="price-val" *ngIf="pkg.price > 0">{{ pkg.price | number:'1.0-0' }}</span>
+                <span class="price-currency" *ngIf="pkg.price > 0">đ</span>
+              </div>
+              <span class="price-period">{{ pkg.durationTime }} ngày</span>
+            </div>
 
-          <!-- Action Button -->
-          <div class="pricing-card-action">
-            <button
-              type="button"
-              class="btn-subscribe"
-              (click)="$event.stopPropagation(); handlePackagePurchase(pkg)"
-              [disabled]="isProcessingPayment"
-              [class.is-loading]="isProcessingPayment && selectedPackage?.packageId === pkg.packageId">
-              <span class="btn-text">
-                <ng-container *ngIf="isProcessingPayment && selectedPackage?.packageId === pkg.packageId">
-                  <span class="spinner"></span> Đang xử lý...
-                </ng-container>
-                <ng-container *ngIf="!(isProcessingPayment && selectedPackage?.packageId === pkg.packageId)">
-                  {{ pkg.price === 0 ? 'Dùng thử ngay' : 'Đăng ký ngay' }}
-                </ng-container>
-              </span>
-            </button>
+            <!-- Features -->
+            <div class="pricing-card-features">
+              <ul class="features-list">
+                <li *ngFor="let item of getPackageFeatures(pkg.name)" class="feature-item">
+                  <span class="feature-check">✓</span>
+                  <span class="feature-text">{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Action Button -->
+            <div class="pricing-card-action">
+              <button type="button" class="btn-subscribe" (click)="handlePackagePurchase(pkg)"
+                [disabled]="isProcessingPayment"
+                [class.is-loading]="isProcessingPayment && selectedPackage?.packageId === pkg.packageId">
+                <span class="btn-text">
+                  <ng-container *ngIf="isProcessingPayment && selectedPackage?.packageId === pkg.packageId">
+                    <span class="spinner"></span> Đang xử lý...
+                  </ng-container>
+                  <ng-container *ngIf="!(isProcessingPayment && selectedPackage?.packageId === pkg.packageId)">
+                    {{ pkg.price === 0 ? 'Dùng thử ngay' : 'Đăng ký ngay' }}
+                  </ng-container>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Features Comparison Table -->
-    <div class="comparison-table-container fade-up">
-      <h3 class="comparison-title">Bảng So Sánh Chi Tiết Tính Năng</h3>
-      <div class="table-responsive">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th>Tính năng</th>
-              <th>Dùng thử</th>
-              <th>Cấp tốc</th>
-              <th>Nâng cao</th>
-              <th>Chuyên sâu</th>
-              <th>Premium</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="feature-name font-semibold">Giá</td>
-              <td class="free-price text-center font-bold">Miễn phí</td>
-              <td class="text-center">129.000đ</td>
-              <td class="text-center">269.000đ</td>
-              <td class="text-center">469.000đ</td>
-              <td class="premium-price text-center font-bold">899.000đ</td>
-            </tr>
-            <tr>
-              <td class="feature-name font-semibold">Thời hạn</td>
-              <td class="text-center">3 ngày</td>
-              <td class="text-center">1 tháng</td>
-              <td class="text-center">3 tháng</td>
-              <td class="text-center">6 tháng</td>
-              <td class="text-center">12 tháng</td>
-            </tr>
-            <tr>
-              <td class="feature-name font-semibold">Số lượng đề</td>
-              <td class="text-center font-bold text-sky-deep">1 bộ</td>
-              <td class="text-center font-bold text-sky-deep">30 bộ</td>
-              <td class="text-center font-bold text-sky-deep">65 bộ</td>
-              <td class="text-center font-bold text-sky-deep">150+ bộ</td>
-              <td class="text-center font-bold text-emerald-deep">Không giới hạn</td>
-            </tr>
-            <tr>
-              <td class="feature-name font-semibold">Giải thích chi tiết</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-            </tr>
-            <tr>
-              <td class="feature-name font-semibold">Thi thử không giới hạn</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-            </tr>
-            <tr>
-              <td class="feature-name font-semibold">Phân tích kết quả AI</td>
-              <td class="text-center text-muted">—</td>
-              <td class="text-center text-muted">—</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-              <td class="text-center text-success font-bold">✓</td>
-            </tr>
-            <tr>
-              <td class="feature-name font-semibold">Hỗ trợ học tập</td>
-              <td class="text-center text-muted">Cơ bản</td>
-              <td class="text-center text-muted">Cơ bản</td>
-              <td class="text-center text-muted">Ưu tiên</td>
-              <td class="text-center text-success font-bold">VIP 24/7</td>
-              <td class="text-center text-success font-bold">VIP Đặc quyền</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Features Comparison Table -->
+      <div class="comparison-table-container fade-up">
+        <h3 class="comparison-title">Bảng So Sánh Chi Tiết Tính Năng</h3>
+        <div class="table-responsive">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Tính năng</th>
+                <th>Dùng thử</th>
+                <th>Cấp tốc</th>
+                <th>Nâng cao</th>
+                <th>Chuyên sâu</th>
+                <th>Premium</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="feature-name font-semibold">Giá</td>
+                <td class="free-price text-center font-bold">Miễn phí</td>
+                <td class="text-center">129.000đ</td>
+                <td class="text-center">269.000đ</td>
+                <td class="text-center">469.000đ</td>
+                <td class="premium-price text-center font-bold">899.000đ</td>
+              </tr>
+              <tr>
+                <td class="feature-name font-semibold">Thời hạn</td>
+                <td class="text-center">3 ngày</td>
+                <td class="text-center">1 tháng</td>
+                <td class="text-center">3 tháng</td>
+                <td class="text-center">6 tháng</td>
+                <td class="text-center">12 tháng</td>
+              </tr>
+              <tr>
+                <td class="feature-name font-semibold">Số lượng đề</td>
+                <td class="text-center font-bold text-sky-deep">1 bộ</td>
+                <td class="text-center font-bold text-sky-deep">30 bộ</td>
+                <td class="text-center font-bold text-sky-deep">65 bộ</td>
+                <td class="text-center font-bold text-sky-deep">150+ bộ</td>
+                <td class="text-center font-bold text-emerald-deep">Không giới hạn</td>
+              </tr>
+              <tr>
+                <td class="feature-name font-semibold">Giải thích chi tiết</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+              </tr>
+              <tr>
+                <td class="feature-name font-semibold">Thi thử không giới hạn</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+              </tr>
+              <tr>
+                <td class="feature-name font-semibold">Phân tích kết quả AI</td>
+                <td class="text-center text-muted">—</td>
+                <td class="text-center text-muted">—</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+                <td class="text-center text-success font-bold">✓</td>
+              </tr>
+              <tr>
+                <td class="feature-name font-semibold">Hỗ trợ học tập</td>
+                <td class="text-center text-muted">Cơ bản</td>
+                <td class="text-center text-muted">Cơ bản</td>
+                <td class="text-center text-muted">Ưu tiên</td>
+                <td class="text-center text-success font-bold">VIP 24/7</td>
+                <td class="text-center text-success font-bold">VIP Đặc quyền</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- CASE 2: SHOW EXAMS WHEN USER HAS ACTIVE SUBSCRIPTION -->
-  <div class="two-col-layout" [class.no-sidebar]="!showSidebar" *ngIf="hasActivePackage || selectedExamPackage">
-    @if (showSidebar) {
+  <!-- CASE 2: SHOW EXAMS WHEN USER HAS ACTIVE SUBSCRIPTION -->
+    <div class="two-col-layout" [class.no-sidebar]="!showSidebar" *ngIf="hasActivePackage">
+      @if (showSidebar) {
       <aside class="sidebar">
         <div class="sidebar-panel fade-up">
           <div class="panel-title">Tìm kiếm nhanh</div>
           <div class="sidebar-search">
             <span class="search-icon">🔍</span>
-            <input
-              type="text"
-              [value]="searchQuery"
-              placeholder="Tìm kiếm đề thi..."
-              aria-label="Tìm kiếm đề thi"
+            <input type="text" [value]="searchQuery" placeholder="Tìm kiếm đề thi..." aria-label="Tìm kiếm đề thi"
               (input)="onSearchInput($event)" />
           </div>
         </div>
         @if (showTypeFilter) {
-          <div class="sidebar-panel fade-up d1">
-            <div class="panel-title">Loại đề thi</div>
-            <ul class="sfl">
-              @for (f of typeFilters; track f.id) {
-                <li
-                  class="sfl-item"
-                  [class.active]="activeType === f.id"
-                  (click)="setType(f.id)"
-                  role="button"
-                  tabindex="0"
-                >
-                  {{ f.label }} <span class="sfl-count">{{ f.count }}</span>
-                </li>
-              }
-            </ul>
-          </div>
+        <div class="sidebar-panel fade-up d1">
+          <div class="panel-title">Loại đề thi</div>
+          <ul class="sfl">
+            @for (f of typeFilters; track f.id) {
+            <li class="sfl-item" [class.active]="activeType === f.id" (click)="setType(f.id)" role="button"
+              tabindex="0">
+              {{ f.label }} <span class="sfl-count">{{ f.count }}</span>
+            </li>
+            }
+          </ul>
+        </div>
         }
         @if (showYearFilter) {
-          <div class="sidebar-panel fade-up d1">
-            <div class="panel-title">Năm học</div>
-            <div class="chip-group">
-              @for (y of yearChips; track y.id) {
-                <button
-                  type="button"
-                  class="filter-chip"
-                  [class.active]="activeYear === y.id"
-                  (click)="setYear(y.id)"
-                >
-                  {{ y.label }}
-                </button>
-              }
-            </div>
+        <div class="sidebar-panel fade-up d1">
+          <div class="panel-title">Năm học</div>
+          <div class="chip-group">
+            @for (y of yearChips; track y.id) {
+            <button type="button" class="filter-chip" [class.active]="activeYear === y.id" (click)="setYear(y.id)">
+              {{ y.label }}
+            </button>
+            }
           </div>
+        </div>
         }
         @if (showLevelFilter) {
-          <div class="sidebar-panel fade-up d1">
-            <div class="panel-title">Độ khó</div>
-            <ul class="sfl">
-              @for (d of difficultyFilters; track d.id) {
-                <li
-                  class="sfl-item"
-                  [class.active]="activeDifficulty === d.id"
-                  (click)="setDifficulty(d.id)"
-                  role="button"
-                  tabindex="0"
-                >
-                  {{ d.label }} <span class="sfl-count">{{ d.count }}</span>
-                </li>
-              }
-            </ul>
-          </div>
+        <div class="sidebar-panel fade-up d1">
+          <div class="panel-title">Độ khó</div>
+          <ul class="sfl">
+            @for (d of difficultyFilters; track d.id) {
+            <li class="sfl-item" [class.active]="activeDifficulty === d.id" (click)="setDifficulty(d.id)" role="button"
+              tabindex="0">
+              {{ d.label }} <span class="sfl-count">{{ d.count }}</span>
+            </li>
+            }
+          </ul>
+        </div>
         }
       </aside>
-    }
+      }
 
-    <div class="exam-content">
-      <div class="package-select-panel fade-up" *ngIf="packagesList.length > 0">
-        <div class="panel-title">Chọn gói để xem đề</div>
-        <div class="package-chip-row">
-          <button
-            type="button"
-            class="package-chip"
-            *ngFor="let pkg of packagesList"
-            [class.active]="selectedExamPackageId === pkg.packageId"
-            (click)="onSelectPackage(pkg)">
-            {{ pkg.name }}
-          </button>
-        </div>
-      </div>
-
-      @if (!loading && !errorMessage && examCardsMain.length > 0) {
+      <div class="exam-content">
+        @if (!loading && !errorMessage && examCardsMain.length > 0) {
         <div class="stats-banner fade-up">
           <div class="stat-item">
             <div class="stat-icon">📚</div>
@@ -280,87 +248,61 @@
             <div class="stat-label">Đề trên trang</div>
           </div>
           @if (lastPage > 1) {
-            <div class="stat-item">
-              <div class="stat-icon">📄</div>
-              <div class="stat-num">{{ currentPage }}/{{ lastPage }}</div>
-              <div class="stat-label">Trang</div>
-            </div>
+          <div class="stat-item">
+            <div class="stat-icon">📄</div>
+            <div class="stat-num">{{ currentPage }}/{{ lastPage }}</div>
+            <div class="stat-label">Trang</div>
+          </div>
           }
         </div>
-      }
+        }
 
-      @if (showTypeFilter && tabs.length > 1) {
+        @if (showTypeFilter && tabs.length > 1) {
         <div class="tab-bar fade-up">
           @for (t of tabs; track t.id) {
-            <button
-              type="button"
-              class="tab"
-              [class.active]="activeTab === t.id"
-              (click)="setTab(t.id)"
-            >
-              {{ t.label }}
-            </button>
+          <button type="button" class="tab" [class.active]="activeTab === t.id" (click)="setTab(t.id)">
+            {{ t.label }}
+          </button>
           }
         </div>
-      }
+        }
 
-      <div class="toolbar fade-up">
-        <div class="result-count">Hiển thị <span>{{ examCardsMain.length }}</span> / {{ totalCount }} đề thi</div>
-        <div class="toolbar-right">
-          @if (sortOptions.length > 0) {
-            <select
-              class="sort-select"
-              aria-label="Sắp xếp"
-              [value]="activeSort"
-              (change)="onSortChange($event)">
+        <div class="toolbar fade-up">
+          <div class="result-count">Hiển thị <span>{{ examCardsMain.length }}</span> / {{ totalCount }} đề thi</div>
+          <div class="toolbar-right">
+            @if (sortOptions.length > 0) {
+            <select class="sort-select" aria-label="Sắp xếp" [value]="activeSort" (change)="onSortChange($event)">
               @for (option of sortOptions; track option.id) {
-                <option [value]="option.id">{{ option.label }}</option>
+              <option [value]="option.id">{{ option.label }}</option>
               }
             </select>
-          }
-          <div class="view-toggle" role="group" aria-label="Chế độ hiển thị">
-            <button
-              type="button"
-              class="view-btn"
-              [class.active]="viewMode === 'grid'"
-              [attr.aria-pressed]="viewMode === 'grid'"
-              (click)="setView('grid')"
-              title="Dạng lưới">
-              <span class="view-btn-icon" aria-hidden="true">⊞</span>
-            </button>
-            <button
-              type="button"
-              class="view-btn"
-              [class.active]="viewMode === 'list'"
-              [attr.aria-pressed]="viewMode === 'list'"
-              (click)="setView('list')"
-              title="Dạng dòng">
-              <span class="view-btn-icon" aria-hidden="true">☰</span>
-            </button>
+            }
+            <div class="view-toggle" role="group" aria-label="Chế độ hiển thị">
+              <button type="button" class="view-btn" [class.active]="viewMode === 'grid'"
+                [attr.aria-pressed]="viewMode === 'grid'" (click)="setView('grid')" title="Dạng lưới">
+                <span class="view-btn-icon" aria-hidden="true">⊞</span>
+              </button>
+              <button type="button" class="view-btn" [class.active]="viewMode === 'list'"
+                [attr.aria-pressed]="viewMode === 'list'" (click)="setView('list')" title="Dạng dòng">
+                <span class="view-btn-icon" aria-hidden="true">☰</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="active-pkg-banner fade-up" *ngIf="selectedExamPackage">
-        <span>⭐ Đang xem đề của gói: <strong>{{ selectedExamPackageName }}</strong></span>
-      </div>
+        <div class="active-pkg-banner fade-up" *ngIf="hasActivePackage && activeUserPkg">
+          <span>⭐ Bạn đang sử dụng gói: <strong>{{ activeUserPkg.packageName }}</strong> (Còn hạn đến {{
+            activeUserPkg.endDate | date: 'dd/MM/yyyy' }})</span>
+        </div>
 
-      <div class="active-pkg-banner fade-up" *ngIf="!selectedExamPackage && hasActivePackage && activeUserPkg">
-        <span>⭐ Bạn đang sử dụng gói: <strong>{{ activeUserPkg.packageName }}</strong> (Còn hạn đến {{ activeUserPkg.endDate | date: 'dd/MM/yyyy' }})</span>
-      </div>
+        <div class="section-title-row fade-up">
+          <h2 class="section-title">Danh sách <span>đề thi</span></h2>
+          <button type="button" class="btn-action btn-action--secondary" (click)="loadExams()" [disabled]="loading">
+            {{ loading ? 'Đang tải...' : 'Tải lại' }}
+          </button>
+        </div>
 
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">Danh sách <span>đề thi</span></h2>
-        <button
-          type="button"
-          class="btn-action btn-action--secondary"
-          (click)="loadExams()"
-          [disabled]="loading">
-          {{ loading ? 'Đang tải...' : 'Tải lại' }}
-        </button>
-      </div>
-
-      @if (loading) {
+        @if (loading) {
         <div class="exam-notice-bar fade-up">
           <span class="exam-notice-emoji">⏳</span>
           <div class="exam-notice-text">
@@ -368,38 +310,34 @@
             <div class="exam-notice-desc">Vui lòng chờ một chút.</div>
           </div>
         </div>
-      } @else if (errorMessage) {
+        } @else if (errorMessage) {
         <div class="exam-notice-bar fade-up">
           <span class="exam-notice-emoji">!</span>
           <div class="exam-notice-text">
             <div class="exam-notice-title">{{ errorMessage }}</div>
             <div class="exam-notice-desc">Hãy thử tải lại trang hoặc quay lại sau.</div>
           </div>
-          <button
-            type="button"
-            class="btn-action btn-action--primary"
-            (click)="loadExams()"
-            [disabled]="loading">
+          <button type="button" class="btn-action btn-action--primary" (click)="loadExams()" [disabled]="loading">
             {{ loading ? 'Đang tải...' : 'Thử lại' }}
           </button>
         </div>
-      } @else if (examCardsMain.length === 0) {
+        } @else if (examCardsMain.length === 0) {
         <div class="exam-notice-bar fade-up">
           <span class="exam-notice-emoji">{{ hasActiveFilters ? '🔍' : '📭' }}</span>
           <div class="exam-notice-text">
             @if (hasActiveFilters) {
-              <div class="exam-notice-title">Không tìm thấy đề thi phù hợp</div>
-              <div class="exam-notice-desc">Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
+            <div class="exam-notice-title">Không tìm thấy đề thi phù hợp</div>
+            <div class="exam-notice-desc">Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
             } @else {
-              <div class="exam-notice-title">Chưa có đề thi nào</div>
-              <div class="exam-notice-desc">Hiện chưa có đề thi để hiển thị. Vui lòng quay lại sau.</div>
+            <div class="exam-notice-title">Chưa có đề thi nào</div>
+            <div class="exam-notice-desc">Hiện chưa có đề thi để hiển thị. Vui lòng quay lại sau.</div>
             }
           </div>
         </div>
-      }
+        }
 
-      <div class="exam-cards fade-up" [class.list-mode]="viewMode === 'list'">
-        @for (exam of examCardsMain; track exam.examId) {
+        <div class="exam-cards fade-up" [class.list-mode]="viewMode === 'list'">
+          @for (exam of examCardsMain; track exam.examId) {
           <div class="exam-card">
             <div class="exam-card-cover" [ngClass]="exam.cover">
               <div class="cover-pattern"></div>
@@ -421,22 +359,25 @@
               </div>
             </div>
           </div>
-        }
-      </div>
+          }
+        </div>
 
-      @if (lastPage > 1) {
+        @if (lastPage > 1) {
         <div class="pagination fade-up">
-          <button type="button" class="pg-btn" (click)="setPage(currentPage - 1)" [disabled]="currentPage <= 1" aria-label="Trang trước">‹</button>
+          <button type="button" class="pg-btn" (click)="setPage(currentPage - 1)" [disabled]="currentPage <= 1"
+            aria-label="Trang trước">‹</button>
           @for (p of pages; track p) {
-            <button type="button" class="pg-btn" [class.active]="currentPage === p" (click)="setPage(p)">{{ p }}</button>
+          <button type="button" class="pg-btn" [class.active]="currentPage === p" (click)="setPage(p)">{{ p }}</button>
           }
           @if (lastPage > pages.length) {
-            <span class="pg-ellipsis">...</span>
-            <button type="button" class="pg-btn" [class.active]="currentPage === lastPage" (click)="setPage(lastPage)">{{ lastPage }}</button>
+          <span class="pg-ellipsis">...</span>
+          <button type="button" class="pg-btn" [class.active]="currentPage === lastPage" (click)="setPage(lastPage)">{{
+            lastPage }}</button>
           }
-          <button type="button" class="pg-btn" (click)="setPage(currentPage + 1)" [disabled]="currentPage >= lastPage" aria-label="Trang sau">›</button>
+          <button type="button" class="pg-btn" (click)="setPage(currentPage + 1)" [disabled]="currentPage >= lastPage"
+            aria-label="Trang sau">›</button>
         </div>
-      }
+        }
+      </div>
     </div>
   </div>
-</div>
