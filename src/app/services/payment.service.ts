@@ -78,6 +78,10 @@ export class PaymentService {
     });
   }
 
+  verifyReturn(orderCode: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/Payments/verify-return?orderCode=${orderCode}`);
+  }
+
   getMyPaymentHistory(): Observable<PaymentResponse[]> {
     return this.http.get<PaymentResponse[]>(`${this.apiUrl}/Payments/my-history`);
   }

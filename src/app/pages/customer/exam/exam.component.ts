@@ -5,6 +5,7 @@ import { Subscription, firstValueFrom } from 'rxjs';
 import { ExamService } from '../../../services/exam.service';
 import { PaymentService, UserPackageResponse, PackageResponse } from '../../../services/payment.service';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
 
 interface ExamCard {
   examId: string;
@@ -107,6 +108,7 @@ export class ExamComponent implements OnInit, OnDestroy {
   activeUserPkg: UserPackageResponse | null = null;
   isProcessingPayment = false;
   selectedPackage: any = null;
+  selectedExamPackage: PackageResponse | null = null;
   packagesList: PackageResponse[] = [];
 
   private catalogExams: Exam[] = [];
@@ -118,6 +120,7 @@ export class ExamComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
+    private notificationService: NotificationService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -129,16 +132,49 @@ export class ExamComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.route.queryParams.subscribe(params => {
-        if (params['payment'] === 'success') {
-          alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
-          // Clean query params from URL
-          this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: { payment: null },
-            queryParamsHandling: 'merge'
-          });
-          // Poll for update: 6 attempts × 2 seconds = 12 second max wait
-          this.pollSubscription(6, 2000);
+        if (params['payment'] === 'success' || (params['code'] === '00' && params['orderCode'])) {
+          const orderCode = params['orderCode'];
+          
+          if (orderCode) {
+            // Manually verify return for local testing bypassing webhook
+            this.paymentService.verifyReturn(orderCode).subscribe({
+              next: () => {
+                this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.', 'success');
+                this.router.navigate([], {
+                  relativeTo: this.route,
+                  queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+                  queryParamsHandling: 'merge'
+                });
+                // Poll just in case, but it should be instantaneous now
+                this.pollSubscription(3, 1000);
+              },
+              error: (err) => {
+                console.error('Error verifying return:', err);
+                this.router.navigate([], {
+                  relativeTo: this.route,
+                  queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+                  queryParamsHandling: 'merge'
+                });
+                this.pollSubscription(6, 2000);
+              }
+            });
+          } else {
+            this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.', 'success');
+            // Clean query params from URL
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { payment: null },
+              queryParamsHandling: 'merge'
+            });
+            // Poll for update: 6 attempts × 2 seconds = 12 second max wait
+            this.pollSubscription(6, 2000);
+          }
+        } else if (params['payment'] === 'cancel' || params['cancel'] === 'true') {
+           this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+              queryParamsHandling: 'merge'
+            });
         }
       })
     );
@@ -164,10 +200,11 @@ export class ExamComponent implements OnInit, OnDestroy {
       next: (userPackage) => {
         this.activeUserPkg = userPackage;
         this.hasActivePackage = userPackage?.isActive ?? false;
+        this.loadPackages();
         if (this.hasActivePackage) {
-          this.loadExams();
+          this.loadExams(userPackage.packageId);
         } else {
-          this.loadPackages();
+          this.loading = false;
         }
         this.cdr.markForCheck();
       },
@@ -190,8 +227,9 @@ export class ExamComponent implements OnInit, OnDestroy {
       next: (userPackage) => {
         this.activeUserPkg = userPackage;
         this.hasActivePackage = userPackage?.isActive ?? false;
+        this.loadPackages();
         if (this.hasActivePackage) {
-          this.loadExams();
+          this.loadExams(userPackage.packageId);
         } else if (retries > 0) {
           console.log(`Polling for subscription: ${6 - retries}/6 attempts...`);
           setTimeout(() => this.pollSubscription(retries - 1, delayMs), delayMs);
@@ -218,46 +256,71 @@ export class ExamComponent implements OnInit, OnDestroy {
 
   loadPackages(): void {
     const sub = this.paymentService.getActivePackages().subscribe({
-      next: (packages) => {
-        this.packagesList = (packages || []).sort((a, b) => a.price - b.price);
+      next: (response) => {
+        this.packagesList = this.extractPackages(response).sort((a, b) => a.price - b.price);
+
+        if (!this.selectedExamPackage) {
+          this.selectedExamPackage =
+            this.packagesList.find(pkg => pkg.packageId === this.activeUserPkg?.packageId)
+            ?? this.packagesList[0]
+            ?? null;
+        }
+
+        if (!this.hasActivePackage && this.selectedExamPackage) {
+          this.loadExams(this.selectedExamPackage.packageId);
+        } else if (!this.hasActivePackage && this.packagesList.length === 0) {
+          this.loadExams();
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error loading active packages:', err);
+        if (!this.hasActivePackage) {
+          this.loadExams();
+        }
       }
     });
     this.subscriptions.add(sub);
   }
 
-  async loadExams(): Promise<void> {
+  async loadExams(packageId?: string): Promise<void> {
     try {
       this.loading = true;
       this.errorMessage = '';
       this.currentPage = 1;
 
       let exams: Exam[] = [];
+      const selectedPackageId = packageId ?? this.selectedExamPackage?.packageId ?? this.activeUserPkg?.packageId;
 
-      if (this.hasActivePackage && this.activeUserPkg && this.activeUserPkg.packageId) {
-        const packageId = this.activeUserPkg.packageId;
+      if (selectedPackageId) {
         try {
-          const response = await firstValueFrom(this.paymentService.getPackageExams(packageId));
+          const response = await firstValueFrom(this.paymentService.getPackageExams(selectedPackageId));
 
           // Handle both camelCase and PascalCase response formats
-          exams = response.exams ?? response.Exams ?? response.data?.exams ?? [];
+          exams = this.extractExams(response);
+          this.selectedExamPackage =
+            this.packagesList.find(pkg => pkg.packageId === selectedPackageId)
+            ?? this.selectedExamPackage
+            ?? null;
 
           if (!exams || exams.length === 0) {
-            console.warn('Package returned no exams. Package ID:', packageId);
+            console.warn('Package returned no exams. Package ID:', selectedPackageId);
             this.errorMessage = 'Gói học tập của bạn chưa có đề thi. Vui lòng liên hệ hỗ trợ.';
           }
         } catch (packageError) {
           console.error('Error loading package exams:', packageError);
-          this.errorMessage = 'Không thể tải đề thi từ gói. Vui lòng thử lại.';
-          throw packageError;
+          const response = await this.examService.getExams(1, 500);
+          exams = this.extractExams(response);
+
+          if (!exams || exams.length === 0) {
+            this.errorMessage = 'Không thể tải đề thi từ gói. Vui lòng thử lại.';
+            throw packageError;
+          }
         }
       } else {
         // Fallback: load all exams
         const response = await this.examService.getExams(1, 500);
-        exams = response.exams ?? response.data?.exams ?? [];
+        exams = this.extractExams(response);
       }
 
       this.catalogExams = exams;
@@ -287,6 +350,40 @@ export class ExamComponent implements OnInit, OnDestroy {
     this.lastPage = 1;
     this.pages = [1];
     this.resetFilters();
+  }
+
+  private extractExams(response: any): Exam[] {
+    const candidates = [
+      response,
+      response?.exams,
+      response?.Exams,
+      response?.items,
+      response?.Items,
+      response?.data?.exams,
+      response?.data?.Exams,
+      response?.data?.items,
+      response?.data?.Items,
+      response?.data,
+    ];
+
+    return candidates.find(Array.isArray) ?? [];
+  }
+
+  private extractPackages(response: any): PackageResponse[] {
+    const candidates = [
+      response,
+      response?.packages,
+      response?.Packages,
+      response?.items,
+      response?.Items,
+      response?.data?.packages,
+      response?.data?.Packages,
+      response?.data?.items,
+      response?.data?.Items,
+      response?.data,
+    ];
+
+    return candidates.find(Array.isArray) ?? [];
   }
 
   private buildFiltersFromCatalog(exams: Exam[]): void {
@@ -700,6 +797,20 @@ export class ExamComponent implements OnInit, OnDestroy {
       || (this.showLevelFilter && this.activeDifficulty !== 'all');
   }
 
+  get selectedExamPackageId(): string | null {
+    return this.selectedExamPackage?.packageId ?? null;
+  }
+
+  get selectedExamPackageName(): string {
+    return this.selectedExamPackage?.name ?? '';
+  }
+
+  onSelectPackage(pkg: PackageResponse): void {
+    this.selectedExamPackage = pkg;
+    this.resetFilters();
+    this.loadExams(pkg.packageId);
+  }
+
   handlePackagePurchase(pkg: any): void {
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
@@ -717,33 +828,40 @@ export class ExamComponent implements OnInit, OnDestroy {
     if (pkg.price === 0 || pkg.name.toLowerCase().includes('dùng thử')) {
       this.paymentService.activateFreeTrial().subscribe({
         next: (response) => {
-          alert('Kích hoạt dùng thử miễn phí thành công! Bắt đầu trải nghiệm ngay.');
+          this.notificationService.show('Kích hoạt gói thành công! Bắt đầu trải nghiệm ngay.', 'success');
           this.isProcessingPayment = false;
           this.selectedPackage = null;
           this.checkUserSubscription();
         },
         error: (err) => {
           console.error('Error activating free trial:', err);
-          alert(err.error?.message || 'Bạn đã sử dụng gói dùng thử trước đó rồi.');
+          this.notificationService.show(err.error?.message || 'Bạn đã sử dụng gói dùng thử trước đó rồi.', 'error');
           this.isProcessingPayment = false;
           this.selectedPackage = null;
           this.cdr.markForCheck();
         }
       });
     } else {
-      // Call checkout API for paid packages
+      // Normal checkout (now returns UserPackage directly for instant access)
       this.paymentService.checkout(pkg.packageId, 'bank_transfer').subscribe({
-        next: (response) => {
-          console.log('Checkout initiated:', response);
+        next: (response: any) => {
           if (response.checkoutUrl) {
             window.location.href = response.checkoutUrl;
+          } else if (response.userPackageId) {
+            this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đã được kích hoạt.', 'success');
+            this.isProcessingPayment = false;
+            this.selectedPackage = null;
+            this.checkUserSubscription();
+          } else {
+            this.isProcessingPayment = false;
+            this.selectedPackage = null;
+            this.cdr.markForCheck();
+            this.notificationService.show('Lỗi: Không nhận được thông tin gói hoặc link thanh toán.', 'error');
           }
-          this.isProcessingPayment = false;
-          this.cdr.markForCheck();
         },
         error: (err) => {
           console.error('Error during checkout:', err);
-          alert('Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.');
+          this.notificationService.show('Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.', 'error');
           this.isProcessingPayment = false;
           this.selectedPackage = null;
           this.cdr.markForCheck();
@@ -757,8 +875,7 @@ export class ExamComponent implements OnInit, OnDestroy {
       alert('Vui lòng mua gói để truy cập đề thi.');
       return;
     }
-    // Navigate to take exam (route is '/test')
-    this.router.navigate(['/test'], { queryParams: { examId: exam.examId } });
+    this.router.navigate(['/lam-bai'], { queryParams: { examId: exam.examId } });
   }
 
   getPackageFeatures(name: string): string[] {
