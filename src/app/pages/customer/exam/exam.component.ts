@@ -5,6 +5,7 @@ import { Subscription, firstValueFrom } from 'rxjs';
 import { ExamService } from '../../../services/exam.service';
 import { PaymentService, UserPackageResponse, PackageResponse } from '../../../services/payment.service';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
 
 interface ExamCard {
   examId: string;
@@ -119,6 +120,7 @@ export class ExamComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
+    private notificationService: NotificationService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -137,7 +139,7 @@ export class ExamComponent implements OnInit, OnDestroy {
             // Manually verify return for local testing bypassing webhook
             this.paymentService.verifyReturn(orderCode).subscribe({
               next: () => {
-                alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
+                this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.', 'success');
                 this.router.navigate([], {
                   relativeTo: this.route,
                   queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
@@ -157,7 +159,7 @@ export class ExamComponent implements OnInit, OnDestroy {
               }
             });
           } else {
-            alert('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.');
+            this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.', 'success');
             // Clean query params from URL
             this.router.navigate([], {
               relativeTo: this.route,
@@ -826,14 +828,14 @@ export class ExamComponent implements OnInit, OnDestroy {
     if (pkg.price === 0 || pkg.name.toLowerCase().includes('dùng thử')) {
       this.paymentService.activateFreeTrial().subscribe({
         next: (response) => {
-          alert('Kích hoạt dùng thử miễn phí thành công! Bắt đầu trải nghiệm ngay.');
+          this.notificationService.show('Kích hoạt gói thành công! Bắt đầu trải nghiệm ngay.', 'success');
           this.isProcessingPayment = false;
           this.selectedPackage = null;
           this.checkUserSubscription();
         },
         error: (err) => {
           console.error('Error activating free trial:', err);
-          alert(err.error?.message || 'Bạn đã sử dụng gói dùng thử trước đó rồi.');
+          this.notificationService.show(err.error?.message || 'Bạn đã sử dụng gói dùng thử trước đó rồi.', 'error');
           this.isProcessingPayment = false;
           this.selectedPackage = null;
           this.cdr.markForCheck();
@@ -846,7 +848,7 @@ export class ExamComponent implements OnInit, OnDestroy {
           if (response.checkoutUrl) {
             window.location.href = response.checkoutUrl;
           } else if (response.userPackageId) {
-            alert('Thanh toán thành công! Gói học tập của bạn đã được kích hoạt.');
+            this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đã được kích hoạt.', 'success');
             this.isProcessingPayment = false;
             this.selectedPackage = null;
             this.checkUserSubscription();
@@ -854,12 +856,12 @@ export class ExamComponent implements OnInit, OnDestroy {
             this.isProcessingPayment = false;
             this.selectedPackage = null;
             this.cdr.markForCheck();
-            alert('Lỗi: Không nhận được thông tin gói hoặc link thanh toán.');
+            this.notificationService.show('Lỗi: Không nhận được thông tin gói hoặc link thanh toán.', 'error');
           }
         },
         error: (err) => {
           console.error('Error during checkout:', err);
-          alert('Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.');
+          this.notificationService.show('Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.', 'error');
           this.isProcessingPayment = false;
           this.selectedPackage = null;
           this.cdr.markForCheck();
