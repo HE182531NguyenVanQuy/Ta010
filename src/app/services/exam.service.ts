@@ -1,5 +1,5 @@
 ﻿import { Injectable } from '@angular/core';
-import { environment } from '../../environments/environment.prod';
+import { environment } from '../../environments/environment';
 
 const API_BASE = (environment.apiUrl ?? 'https://localhost:7103/api').replace(/\/+$/g, '');
 

@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { environment } from '../../environments/environment.prod';
+import { environment } from '../../environments/environment';
 import { RegisterRequest, LoginRequest, TokenResponse, CurrentUser, ProfileResponse, UpdateProfileRequest, VerifyOtpResponse } from '../models/auth.models';
 
 
