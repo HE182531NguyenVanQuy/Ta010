@@ -589,6 +589,56 @@ $ls-tight:   -0.5px;
   &:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(14,165,233,.4); }
 }
 
+.security-card {
+  background: #fff;
+  border-radius: $radius;
+  border: 1.5px solid #fbbf24;
+  box-shadow: $shadow;
+  padding: 16px 18px;
+  font-family: var(--font-body);
+}
+
+.security-title {
+  font-family: var(--font-head);
+  font-size: $fs-sm;
+  font-weight: 800;
+  color: $gray-900;
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+.security-count {
+  font-family: var(--font-head);
+  font-size: $fs-md;
+  font-weight: 800;
+  color: #b45309;
+  line-height: 1.3;
+
+  &.danger {
+    color: #dc2626;
+  }
+}
+
+.security-meta,
+.security-warning {
+  font-size: $fs-xs;
+  line-height: 1.45;
+}
+
+.security-meta {
+  color: $gray-500;
+  margin-top: 3px;
+}
+
+.security-warning {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 600;
+}
+
 // PROGRESS CARD
 .progress-card {
   background: #fff;
@@ -978,6 +1028,17 @@ $ls-tight:   -0.5px;
   color: $gray-500;
   margin-bottom: 20px;
   line-height: $lh-relaxed;
+}
+
+.modal-security {
+  margin: -8px 0 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: $fs-sm;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .modal-stats {

@@ -145,6 +145,26 @@ export interface AnswerSubmission {
   userAnswer: string;
 }
 
+export interface ExamSecurityEvent {
+  index: number;
+  leftAt: string;
+  returnedAt?: string | null;
+  durationSeconds: number;
+}
+
+export interface ExamSecurityReport {
+  reason: string;
+  altTabCount: number;
+  threshold: number;
+  totalAwaySeconds: number;
+  autoSubmitted: boolean;
+  studentEmail?: string | null;
+  studentUserId?: string | null;
+  clientTimeZone?: string;
+  userAgent?: string;
+  events: ExamSecurityEvent[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -203,7 +223,7 @@ export class ExamService {
         `${API_BASE}/user/exam-attempts/start`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getJsonHeaders(),
           body: JSON.stringify(payload)
         }
       );
@@ -221,7 +241,7 @@ export class ExamService {
         `${API_BASE}/user/exam-attempts/${attemptId}/answer`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getJsonHeaders(),
           body: JSON.stringify(payload)
         }
       );
@@ -239,7 +259,7 @@ export class ExamService {
         `${API_BASE}/user/exam-attempts/${attemptId}/submit`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getJsonHeaders(),
           body: JSON.stringify(payload)
         }
       );
@@ -302,6 +322,22 @@ export class ExamService {
     }
 
     return fetch(url, options);
+  }
+
+  private getJsonHeaders(): HeadersInit {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const token = this.getAccessToken();
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+  }
+
+  private getAccessToken(): string | null {
+    if (!IS_BROWSER) return null;
+    return localStorage.getItem('tao10_access_token');
   }
 
   private sleep(ms: number): Promise<void> {
