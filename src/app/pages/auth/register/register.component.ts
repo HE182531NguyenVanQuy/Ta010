@@ -157,6 +157,11 @@ export class RegisterComponent {
             this.registerError = errBody.message || 'Dữ liệu không hợp lệ.';
           }
         } else if (error.status === 409) {
+          if (error.error?.message) {
+            this.registerError = error.error.message;
+            this.cdr.markForCheck();
+            return;
+          }
           this.registerError = 'Email hoặc số điện thoại đã được sử dụng.';
         } else if (error.status === 0) {
           this.registerError = 'Lỗi kết nối. Vui lòng kiểm tra kết nối internet.';

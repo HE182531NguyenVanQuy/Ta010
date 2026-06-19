@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { ExamService } from '../../../services/exam.service';
+import { ExamSecurityReport, ExamService } from '../../../services/exam.service';
 
 // Trạng thái của mỗi ô câu hỏi trong nav grid
 export type NavState = 'empty' | 'answered';
@@ -37,6 +37,13 @@ interface QuestionSection {
   questions: Question[];
 }
 
+interface AltTabEvent {
+  index: number;
+  leftAt: string;
+  returnedAt?: string | null;
+  durationSeconds: number;
+}
+
 @Component({
   selector: 'app-test',
   standalone: true,
@@ -62,6 +69,22 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
   finalScore = 0;
   private receivedApiScore = false;
   scoringErrorMessage = '';
+  securityMessage = '';
+  autoSubmitReason = '';
+  private readonly ALT_TAB_LIMIT = 3;
+  private altTabEvents: AltTabEvent[] = [];
+  private currentAwayEvent: AltTabEvent | null = null;
+  private autoSubmittingForSecurity = false;
+  private securityListenersAttached = false;
+  private readonly handleVisibilityChange = () => this.onVisibilityChange();
+  private readonly handleWindowBlur = () => this.registerPageExit();
+  private readonly handleWindowFocus = () => this.registerPageReturn();
+
+  get altTabCount(): number { return this.altTabEvents.length; }
+  get altTabLimit(): number { return this.ALT_TAB_LIMIT; }
+  get totalAwaySeconds(): number {
+    return this.altTabEvents.reduce((total, event) => total + event.durationSeconds, 0);
+  }
 
   // ── Câu trả lời người dùng ──────────────────────────────────
   userAnswers: { [questionId: string]: string } = {};
@@ -175,9 +198,13 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.loadExamData();
+    this.attachSecurityListeners();
   }
   ngAfterViewInit():  void { this.startTimer(); }
-  ngOnDestroy():      void { this.stopTimer(); }
+  ngOnDestroy():      void {
+    this.stopTimer();
+    this.detachSecurityListeners();
+  }
 
   // ── Load exam from API ──────────────────────────────────────
   async loadExamData(): Promise<void> {
@@ -227,6 +254,11 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
     this.finalScore = 0;
     this.receivedApiScore = false;
     this.scoringErrorMessage = '';
+    this.securityMessage = '';
+    this.autoSubmitReason = '';
+    this.altTabEvents = [];
+    this.currentAwayEvent = null;
+    this.autoSubmittingForSecurity = false;
     this.userAnswers  = {};
     this.navStates    = {};
     this.optionStates = {};
@@ -320,6 +352,125 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ── Chọn đáp án ─────────────────────────────────────────────
+  private attachSecurityListeners(): void {
+    if (!this.isBrowser || this.securityListenersAttached) return;
+
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    window.addEventListener('blur', this.handleWindowBlur);
+    window.addEventListener('focus', this.handleWindowFocus);
+    this.securityListenersAttached = true;
+  }
+
+  private detachSecurityListeners(): void {
+    if (!this.isBrowser || !this.securityListenersAttached) return;
+
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    window.removeEventListener('blur', this.handleWindowBlur);
+    window.removeEventListener('focus', this.handleWindowFocus);
+    this.securityListenersAttached = false;
+  }
+
+  private onVisibilityChange(): void {
+    if (document.hidden) {
+      this.registerPageExit();
+      return;
+    }
+
+    this.registerPageReturn();
+  }
+
+  private registerPageExit(): void {
+    if (this.submitted || this.reviewMode || this.submitting || this.loading) return;
+    if (this.currentAwayEvent) return;
+
+    this.currentAwayEvent = {
+      index: this.altTabEvents.length + 1,
+      leftAt: new Date().toISOString(),
+      durationSeconds: 0
+    };
+  }
+
+  private registerPageReturn(): void {
+    if (!this.currentAwayEvent) return;
+
+    const returnedAt = new Date();
+    const leftAt = new Date(this.currentAwayEvent.leftAt);
+    const durationSeconds = Math.max(1, Math.round((returnedAt.getTime() - leftAt.getTime()) / 1000));
+
+    const completedEvent: AltTabEvent = {
+      ...this.currentAwayEvent,
+      returnedAt: returnedAt.toISOString(),
+      durationSeconds
+    };
+
+    this.currentAwayEvent = null;
+    this.altTabEvents = [...this.altTabEvents, completedEvent];
+    this.securityMessage = `Cảnh báo: bạn đã rời màn hình ${this.altTabCount}/${this.altTabLimit} lần. Lần này kéo dài ${durationSeconds} giây.`;
+
+    if (this.altTabCount >= this.altTabLimit) {
+      this.autoSubmitForSecurity();
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  private async autoSubmitForSecurity(): Promise<void> {
+    if (this.autoSubmittingForSecurity || this.submitting || this.submitted) return;
+
+    this.autoSubmittingForSecurity = true;
+    this.autoSubmitReason = `Tự động nộp bài vì rời màn hình ${this.altTabLimit} lần.`;
+    this.securityMessage = this.autoSubmitReason;
+    this.cdr.markForCheck();
+
+    await this.submitExam();
+  }
+
+  private buildSecurityReport(autoSubmitted: boolean): ExamSecurityReport | null {
+    const events = this.getCompletedSecurityEvents();
+    if (events.length === 0) return null;
+
+    const currentUser = this.getStoredCurrentUser();
+
+    return {
+      reason: autoSubmitted ? 'AUTO_SUBMIT_ALT_TAB_LIMIT' : 'ALT_TAB_ACTIVITY_DETECTED',
+      altTabCount: events.length,
+      threshold: this.altTabLimit,
+      totalAwaySeconds: events.reduce((total, event) => total + event.durationSeconds, 0),
+      autoSubmitted,
+      studentEmail: currentUser?.email ?? null,
+      studentUserId: currentUser?.userId ?? null,
+      clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      userAgent: navigator.userAgent,
+      events
+    };
+  }
+
+  private getCompletedSecurityEvents(): AltTabEvent[] {
+    if (!this.currentAwayEvent) return this.altTabEvents;
+
+    const now = new Date();
+    const leftAt = new Date(this.currentAwayEvent.leftAt);
+    const openEvent: AltTabEvent = {
+      ...this.currentAwayEvent,
+      returnedAt: null,
+      durationSeconds: Math.max(1, Math.round((now.getTime() - leftAt.getTime()) / 1000))
+    };
+
+    return [...this.altTabEvents, openEvent];
+  }
+
+  private getStoredCurrentUser(): { userId?: string; email?: string } | null {
+    const storage = this.storage;
+    if (!storage) return null;
+
+    try {
+      const raw = storage.getItem('tao10_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
   async selectOpt(questionId: string, opt: string): Promise<void> {
     if (this.submitted || this.reviewMode) return;
 
@@ -377,9 +528,10 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       throw new Error('Không tìm thấy mã đề thi để tạo lượt làm bài chấm điểm.');
     }
 
+    const currentUser = this.getStoredCurrentUser();
     const attemptResponse = await this.examService.startExamAttempt({
       examId,
-      userId: userId || null
+      userId: userId || currentUser?.userId || null
     });
     const attemptPayload = attemptResponse as any;
     const attempt = attemptPayload.data ?? attemptPayload;
@@ -443,8 +595,10 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       await this.ensureAttempt();
       await this.syncAnswersToAttempt();
 
+      const securityReport = this.buildSecurityReport(this.autoSubmittingForSecurity);
       const result = await this.examService.submitExam(this.attemptId!, {
-        userAnswers: this.userAnswers
+        userAnswers: this.userAnswers,
+        securityReport
       });
       const resultPayload = result as any;
       const submittedAttempt = resultPayload.data ?? resultPayload;
@@ -460,6 +614,8 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
         this.submitted = true;
         this.stopTimer();
         this.clearProgress();
+      } else {
+        this.autoSubmittingForSecurity = false;
       }
       this.cdr.markForCheck();
     }
