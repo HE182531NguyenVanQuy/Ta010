@@ -15,12 +15,8 @@
 
     <nav class="sidebar-nav">
       <!-- Menu chính -->
-      <a
-        *ngFor="let item of sidebarMenuItems"
-        class="nav-item"
-        [class.active]="item.active"
-        (click)="navigateTo(item.route)"
-      >
+      <a *ngFor="let item of sidebarMenuItems" class="nav-item" [class.active]="item.active"
+        (click)="navigateTo(item.route)">
         <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>
       </a>
@@ -29,20 +25,13 @@
       <div class="nav-separator"></div>
 
       <!-- Settings -->
-      <a
-        class="nav-item"
-        [class.active]="activeMenuItem === 'settings'"
-        (click)="navigateTo('settings')"
-      >
+      <a class="nav-item" [class.active]="activeMenuItem === 'settings'" (click)="navigateTo('settings')">
         <span class="material-symbols-outlined nav-icon">settings</span>
         <span class="nav-label">Settings</span>
       </a>
 
       <!-- Logout -->
-      <a
-        class="nav-item logout-nav-item"
-        (click)="navigateTo('logout')"
-      >
+      <a class="nav-item logout-nav-item" (click)="navigateTo('logout')">
         <span class="material-symbols-outlined nav-icon">logout</span>
         <span class="nav-label">Logout</span>
       </a>
@@ -69,11 +58,7 @@
         </div>
         <div class="search-wrapper">
           <span class="material-symbols-outlined search-icon">search</span>
-          <input
-            class="search-input"
-            placeholder="Tìm kiếm người dùng, đề thi, giao dịch..."
-            type="text"
-          />
+          <input class="search-input" placeholder="Tìm kiếm người dùng, đề thi, giao dịch..." type="text" />
         </div>
       </div>
 
@@ -91,11 +76,7 @@
             <p class="user-name">{{ adminName }}</p>
             <p class="user-role">{{ adminRole }}</p>
           </div>
-          <img
-            class="user-avatar"
-            [src]="adminAvatar"
-            alt="Admin avatar"
-          />
+          <img class="user-avatar" [src]="adminAvatar" alt="Admin avatar" />
         </div>
       </div>
     </header>
@@ -132,13 +113,14 @@
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-icon-wrapper">
-              <span class="material-symbols-outlined stat-icon" style="font-variation-settings: 'FILL' 1;">payments</span>
+              <span class="material-symbols-outlined stat-icon"
+                style="font-variation-settings: 'FILL' 1;">payments</span>
             </div>
             <span class="stat-change positive">+8.2%</span>
           </div>
           <div class="stat-body">
-            <h4>Monthly Revenue</h4>
-            <p class="stat-value">${{ stats.monthlyRevenue | number }}</p>
+            <h4>Total Revenue</h4>
+            <p class="stat-value">{{ stats.totalRevenue | number }}VND</p>
           </div>
         </div>
 
@@ -158,13 +140,14 @@
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-icon-wrapper">
-              <span class="material-symbols-outlined stat-icon" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+              <span class="material-symbols-outlined stat-icon"
+                style="font-variation-settings: 'FILL' 1;">inventory_2</span>
             </div>
-            <span class="stat-change positive">+18.1%</span>
+            <span class="stat-change positive">+5.4%</span>
           </div>
           <div class="stat-body">
-            <h4>Total Attempts</h4>
-            <p class="stat-value">{{ stats.totalAttempts / 1000 }}k</p>
+            <h4>Total Packages</h4>
+            <p class="stat-value">{{ stats.totalPackages }}</p>
           </div>
         </div>
       </div>
@@ -176,75 +159,69 @@
           <div class="chart-header">
             <h3>Revenue Analytics</h3>
             <div class="chart-tabs">
-              <button 
-                class="tab-btn" 
-                [class.active]="activeRevenueTab === 'weekly'"
-                (click)="setRevenueTab('weekly')"
-              >Weekly</button>
-              <button 
-                class="tab-btn" 
-                [class.active]="activeRevenueTab === 'monthly'"
-                (click)="setRevenueTab('monthly')"
-              >Monthly</button>
-              <button 
-                class="tab-btn" 
-                [class.active]="activeRevenueTab === 'yearly'"
-                (click)="setRevenueTab('yearly')"
-              >Yearly</button>
+              <button class="tab-btn" [class.active]="activeRevenueTab === 'weekly'"
+                (click)="setRevenueTab('weekly')">Weekly</button>
+              <button class="tab-btn" [class.active]="activeRevenueTab === 'monthly'"
+                (click)="setRevenueTab('monthly')">Monthly</button>
+              <button class="tab-btn" [class.active]="activeRevenueTab === 'yearly'"
+                (click)="setRevenueTab('yearly')">Yearly</button>
             </div>
           </div>
-          <div class="chart-body" [class.chart-12-cols]="activeRevenueTab === 'monthly'">
-            <div 
-              class="chart-bar" 
-              *ngFor="let data of revenueData; let i = index" 
-              [style.height.%]="data.height" 
-              [style.background-color]="getBarColor(i)"
-              [title]="'Doanh thu ' + data.month + ': ' + data.value + 'M'"
-            >
-              <span class="bar-value">{{ data.value }}M</span>
-            </div>
-          </div>
-          <div class="chart-labels" [class.labels-12]="activeRevenueTab === 'monthly'">
-            <span *ngFor="let month of revenueMonths">{{ month }}</span>
+          <div class="chart-body" style="position: relative; height: 300px; width: 100%;">
+            <canvas id="revenueChart"></canvas>
           </div>
         </div>
 
-        <!-- Course Engagement -->
-        <div class="engagement-card">
-          <h3>Course Engagement</h3>
-          <div class="engagement-list">
-            <div class="engagement-item" *ngFor="let course of courseEngagements">
-              <div class="engagement-header">
-                <span class="course-name">{{ course.course }}</span>
-                <span class="course-percentage">{{ course.percentage }}%</span>
+        <!-- Package Distribution Circle -->
+        <div class="package-card"
+          style="background: white; border-radius: 0.75rem; border: 1px solid #e2e8f0; overflow: hidden; padding: 2rem;">
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--on-surface);">Package
+            Distribution</h3>
+          <div class="package-summary"
+            style="display: flex; flex-direction: column; gap: 1rem; height: 300px; overflow-y: auto; padding-right: 0.5rem;">
+            <div class="summary-item" *ngFor="let pkg of packageStats" [style.border-left-color]="pkg.color"
+              style="border-left: 4px solid; padding-left: 1rem; background: #f8fafc; padding: 0.75rem; border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="summary-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="summary-name" style="font-weight: 600; color: #334155;">{{ pkg.name }}</span>
+                <span class="summary-badge" [style.background-color]="pkg.color"
+                  style="padding: 0.2rem 0.6rem; border-radius: 9999px; color: white; font-size: 0.75rem; font-weight: 700;">{{
+                  pkg.percentage }}%</span>
               </div>
-              <div class="progress-bar">
-                <div class="progress-fill" [style.width.%]="course.percentage"></div>
+              <div class="summary-stats" style="display: flex; gap: 1rem;">
+                <div class="summary-stat"
+                  style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: #64748b;">
+                  <span class="material-symbols-outlined" style="font-size: 1.1rem;">group</span>
+                  <span>{{ formatShortNumber(pkg.users) }}</span>
+                </div>
+                <div class="summary-stat"
+                  style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: #64748b;">
+                  <span class="material-symbols-outlined" style="font-size: 1.1rem;">payments</span>
+                  <span>{{ formatCurrency(pkg.price) }}</span>
+                </div>
               </div>
-            </div>
-          </div>
-          <div class="insight-card">
-            <div class="insight-icon">
-              <span class="material-symbols-outlined">tips_and_updates</span>
-            </div>
-            <div class="insight-text">
-              <p>Growth Opportunity</p>
-              <p>STEM courses are 40% more popular this term.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Content Row (Table + Package Circle) -->
-      <div class="content-row fade-in-up">
+      <!-- Content Row (Table) -->
+      <div class="content-row fade-in-up" style="grid-template-columns: 1fr;">
         <!-- Recent Transactions Table -->
         <div class="table-card">
           <div class="table-header">
             <h3>Recent Transactions</h3>
-            <button class="view-all-btn" (click)="viewAllHistory()">View All History</button>
           </div>
-          <div class="table-wrapper">
-            <table>
+          <div class="table-wrapper" style="position: relative; min-height: 280px;">
+            <div class="loading-overlay" *ngIf="isTransactionsLoading"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+              <div class="spinner"
+                style="width: 2.25rem; height: 2.25rem; border: 3px solid rgba(0,97,148,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;">
+              </div>
+              <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--outline); font-weight: 500;">Đang tải dữ
+                liệu...</p>
+            </div>
+
+            <table *ngIf="!isTransactionsLoading && recentTransactions.length > 0">
               <thead>
                 <tr>
                   <th>Transaction ID</th>
@@ -258,96 +235,65 @@
                 <tr *ngFor="let txn of recentTransactions">
                   <td style="font-family: 'Courier New', monospace; color: #64748b;">{{ txn.id }}</td>
                   <td>
-                    <div class="user-cell">
-                      <div class="user-avatar" [ngClass]="txn.avatarBg">{{ txn.initials }}</div>
-                      <span class="user-name">{{ txn.user }}</span>
+                    <div class="user-cell" style="display: flex; align-items: center; gap: 0.85rem;">
+                      <div class="user-avatar" [ngClass]="txn.avatarBg"
+                        style="width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">
+                        {{ txn.initials }}</div>
+                      <span class="user-name" style="font-weight: 600; color: var(--on-surface);">{{ txn.user }}</span>
                     </div>
                   </td>
                   <td style="color: var(--outline);">{{ txn.date }}</td>
-                  <td class="amount">{{ txn.amount }}</td>
+                  <td class="amount" style="font-weight: 600;">{{ txn.amount }}</td>
                   <td>
-                    <span class="status-badge" [ngClass]="getStatusClass(txn.status)">
+                    <span class="status-badge" [ngClass]="getStatusClass(txn.status)"
+                      style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
                       {{ getStatusLabel(txn.status) }}
                     </span>
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
 
-        <!-- Package Distribution Circle -->
-        <div class="package-card">
-          <h3>📦 Phân bố gói dịch vụ</h3>
-          
-          <!-- SVG Circle Chart -->
-          <div class="package-circle-wrapper">
-            <svg viewBox="0 0 200 200" class="package-circle-svg">
-              <!-- Vòng tròn nền -->
-              <circle cx="100" cy="100" r="80" fill="none" stroke="#f1f5f9" stroke-width="20" />
-              
-              <!-- Gói Cơ Bản: 45% -->
-              <circle
-                cx="100" cy="100" r="80"
-                fill="none"
-                stroke="#4db8ff"
-                stroke-width="20"
-                stroke-dasharray="226.19 502.65"
-                transform="rotate(-90 100 100)"
-                style="transition: all 1s ease;"
-              />
-              
-              <!-- Gói Nâng Cao: 35% -->
-              <circle
-                cx="100" cy="100" r="80"
-                fill="none"
-                stroke="#2a8fd4"
-                stroke-width="20"
-                stroke-dasharray="175.93 502.65"
-                stroke-dashoffset="-226.19"
-                transform="rotate(-90 100 100)"
-                style="transition: all 1s ease;"
-              />
-              
-              <!-- Gói Cao Cấp: 20% -->
-              <circle
-                cx="100" cy="100" r="80"
-                fill="none"
-                stroke="#1a6ba0"
-                stroke-width="20"
-                stroke-dasharray="100.53 502.65"
-                stroke-dashoffset="-402.12"
-                transform="rotate(-90 100 100)"
-                style="transition: all 1s ease;"
-              />
-              
-              <!-- Văn bản trung tâm -->
-              <text x="100" y="95" text-anchor="middle" class="package-circle-total">
-                {{ stats.totalPackages | number }}
-              </text>
-              <text x="100" y="115" text-anchor="middle" class="package-circle-label">
-                Gói đã mua
-              </text>
-            </svg>
+            <!-- Empty State -->
+            <div class="empty-state" *ngIf="!isTransactionsLoading && recentTransactions.length === 0"
+              style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center;">
+              <span class="material-symbols-outlined empty-icon"
+                style="font-size: 3.5rem; color: #cbd5e1; margin-bottom: 1rem;">payments</span>
+              <h4 style="font-size: 1rem; font-weight: 700; color: #475569;">Không có giao dịch</h4>
+              <p style="font-size: 0.85rem; color: #94a3b8;">Chưa có giao dịch nào được thực hiện.</p>
+            </div>
           </div>
 
-          <!-- Package Summary Cards -->
-          <div class="package-summary">
-            <div class="summary-item" *ngFor="let pkg of packageStats" [style.border-left-color]="pkg.color">
-              <div class="summary-header">
-                <span class="summary-name">{{ pkg.name }}</span>
-                <span class="summary-badge" [style.background-color]="pkg.color">{{ pkg.percentage }}%</span>
-              </div>
-              <div class="summary-stats">
-                <div class="summary-stat">
-                  <span class="material-symbols-outlined">group</span>
-                  <span>{{ formatShortNumber(pkg.users) }}</span>
-                </div>
-                <div class="summary-stat">
-                  <span class="material-symbols-outlined">payments</span>
-                  <span>{{ formatCurrency(pkg.revenue) }}</span>
-                </div>
-              </div>
+          <!-- Pagination -->
+          <div class="pagination-footer" *ngIf="!isTransactionsLoading && transactionsTotalCount > 0"
+            style="padding: 1.25rem 1.75rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+            <div class="pagination-info" style="font-size: 0.8rem; color: var(--outline); font-weight: 500;">
+              Hiển thị {{ (transactionPageNumber - 1) * transactionPageSize + 1 }} - {{ Math.min(transactionPageNumber *
+              transactionPageSize, transactionsTotalCount) }} trong tổng số {{ transactionsTotalCount }} giao dịch
+            </div>
+            <div class="pagination-controls" style="display: flex; gap: 0.35rem;">
+              <button class="pag-btn"
+                style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e2e8f0; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b;"
+                [disabled]="transactionPageNumber === 1" (click)="onTransactionPageChange(transactionPageNumber - 1)">
+                <span class="material-symbols-outlined" style="font-size: 1.125rem;">chevron_left</span>
+              </button>
+
+              <button *ngFor="let page of transactionPaginationRange" class="pag-btn page-num"
+                style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e2e8f0; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b;"
+                [style.background-color]="page === transactionPageNumber ? 'var(--primary)' : 'white'"
+                [style.color]="page === transactionPageNumber ? 'white' : '#64748b'"
+                [style.border-color]="page === transactionPageNumber ? 'var(--primary)' : '#e2e8f0'"
+                [style.font-weight]="page === transactionPageNumber ? '700' : '400'"
+                (click)="onTransactionPageChange(page)">
+                {{ page }}
+              </button>
+
+              <button class="pag-btn"
+                style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e2e8f0; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b;"
+                [disabled]="transactionPageNumber === transactionTotalPages"
+                (click)="onTransactionPageChange(transactionPageNumber + 1)">
+                <span class="material-symbols-outlined" style="font-size: 1.125rem;">chevron_right</span>
+              </button>
             </div>
           </div>
         </div>

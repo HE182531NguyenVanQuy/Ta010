@@ -1,0 +1,411 @@
+<div class="dashboard-container">
+  <!-- ============================================ -->
+  <!-- SIDEBAR -->
+  <!-- ============================================ -->
+  <aside class="sidebar" [class.open]="!isSidebarCollapsed">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+      </div>
+      <div class="brand-text">
+        <h1>TaO10</h1>
+        <p>Management Portal</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a
+        *ngFor="let item of sidebarMenuItems"
+        class="nav-item"
+        [class.active]="item.active"
+        (click)="navigateTo(item.route)"
+      >
+        <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+
+      <!-- Separator -->
+      <div class="nav-separator"></div>
+
+      <!-- Settings -->
+      <a
+        class="nav-item"
+        [class.active]="activeMenuItem === 'settings'"
+        (click)="navigateTo('settings')"
+      >
+        <span class="material-symbols-outlined nav-icon">settings</span>
+        <span class="nav-label">Settings</span>
+      </a>
+
+      <!-- Logout -->
+      <a
+        class="nav-item logout-nav-item"
+        (click)="navigateTo('logout')"
+      >
+        <span class="material-symbols-outlined nav-icon">logout</span>
+        <span class="nav-label">Logout</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ============================================ -->
+  <!-- MAIN CONTENT -->
+  <!-- ============================================ -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button class="mobile-toggle" (click)="toggleSidebar()">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <button class="profile-avatar-btn" type="button" (click)="navigateTo('profile')" aria-label="Xem hồ sơ">
+          <img class="profile-avatar-img" [src]="adminAvatar" alt="Avatar người dùng" />
+        </button>
+        <div class="breadcrumb">
+          <span class="breadcrumb-link" (click)="navigateTo('dashboard')">Admin</span>
+          <span class="material-symbols-outlined breadcrumb-separator">chevron_right</span>
+          <span class="breadcrumb-current">Quản lý người dùng</span>
+        </div>
+      </div>
+
+      <div class="top-bar-right">
+        <button class="icon-btn">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button class="icon-btn" (click)="navigateTo('settings')">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+        <div class="divider"></div>
+        <div class="user-profile" (click)="navigateTo('profile')" style="cursor: pointer;">
+          <div class="user-info">
+            <p class="user-name">{{ adminName }}</p>
+            <p class="user-role">{{ adminRole }}</p>
+          </div>
+          <img
+            class="user-avatar"
+            [src]="adminAvatar"
+            alt="Admin avatar"
+          />
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <!-- Header -->
+      <div class="page-header fade-in-up">
+        <div class="header-info">
+          <h2>Quản lý người dùng</h2>
+          <p>Xem thông tin cơ bản, chi tiết hoạt động, phân quyền và khóa/mở khóa tài khoản người dùng.</p>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input
+              type="text"
+              class="search-input-box"
+              placeholder="Tìm theo tên hoặc email..."
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onSearch()"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Table Container -->
+      <div class="table-card fade-in-up">
+        <div class="table-header-custom">
+          <h3>Danh sách người dùng</h3>
+          <span class="total-users-badge">Tổng số: {{ totalCount }}</span>
+        </div>
+
+        <div class="table-wrapper">
+          <div class="loading-overlay" *ngIf="isLoading">
+            <div class="spinner"></div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
+
+          <table *ngIf="!isLoading && users.length > 0">
+            <thead>
+              <tr>
+                <th>Họ & Tên / Email</th>
+                <th>Số điện thoại</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Ngày tham gia</th>
+                <th class="actions-header">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of users">
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar" [ngClass]="getAvatarBg(user.fullName)">
+                      {{ getInitials(user.fullName) }}
+                    </div>
+                    <div class="user-meta">
+                      <span class="user-fullname">{{ user.fullName }}</span>
+                      <span class="user-email">{{ user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td style="color: var(--outline);">{{ user.phone || 'Chưa cập nhật' }}</td>
+                <td>
+                  <span class="role-badge" [class.role-admin]="user.role === 'admin'">
+                    {{ user.role === 'admin' ? 'Admin' : 'Customer' }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-active]="user.statusCode === 'ACTIVE'"
+                    [class.status-blocked]="user.statusCode === 'BLOCKED'"
+                  >
+                    {{ user.statusDisplayName }}
+                  </span>
+                </td>
+                <td style="color: var(--outline);">{{ user.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="btn-action btn-view" (click)="viewUserDetail(user.userId)" title="Xem chi tiết">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                    
+                    <button
+                      class="btn-action btn-lock"
+                      [class.btn-unlock]="user.statusCode === 'BLOCKED'"
+                      (click)="toggleUserStatus(user, $event)"
+                      [title]="user.statusCode === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'"
+                    >
+                      <span class="material-symbols-outlined">
+                        {{ user.statusCode === 'ACTIVE' ? 'lock' : 'lock_open' }}
+                      </span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="!isLoading && users.length === 0">
+            <span class="material-symbols-outlined empty-icon">group_off</span>
+            <h4>Không tìm thấy người dùng</h4>
+            <p>Không tìm thấy kết quả nào phù hợp với từ khóa tìm kiếm của bạn.</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-footer" *ngIf="!isLoading && totalCount > 0">
+          <div class="pagination-info">
+            Hiển thị {{ (pageNumber - 1) * pageSize + 1 }} - {{ Math.min(pageNumber * pageSize, totalCount) }} trong tổng số {{ totalCount }} người dùng
+          </div>
+          <div class="pagination-controls">
+            <button
+              class="pag-btn"
+              [disabled]="pageNumber === 1"
+              (click)="onPageChange(pageNumber - 1)"
+            >
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+
+            <button
+              *ngFor="let page of paginationRange"
+              class="pag-btn page-num"
+              [class.active]="page === pageNumber"
+              (click)="onPageChange(page)"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              class="pag-btn"
+              [disabled]="pageNumber === totalPages"
+              (click)="onPageChange(pageNumber + 1)"
+            >
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================================ -->
+<!-- DETAIL MODAL -->
+<!-- ============================================ -->
+<div class="modal-overlay" *ngIf="isDetailModalOpen && selectedUser" (click)="closeDetailModal()">
+  <div class="modal-card fade-in-scale" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon-header">person</span>
+        <h3>Chi tiết người dùng</h3>
+      </div>
+      <button class="btn-close-modal" (click)="closeDetailModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- User profile summary -->
+      <div class="user-summary-card">
+        <div class="summary-avatar-section">
+          <div class="summary-avatar" [ngClass]="getAvatarBg(selectedUser.fullName)">
+            {{ getInitials(selectedUser.fullName) }}
+          </div>
+          <div class="summary-name-section">
+            <h4>{{ selectedUser.fullName }}</h4>
+            <span class="summary-role-badge" [class.role-admin]="selectedUser.role === 'admin'">
+              {{ selectedUser.role === 'admin' ? 'Hệ thống Admin' : 'Khách hàng' }}
+            </span>
+          </div>
+        </div>
+        <div class="summary-status-section">
+          <span
+            class="status-badge-lg"
+            [class.status-active]="selectedUser.statusCode === 'ACTIVE'"
+            [class.status-blocked]="selectedUser.statusCode === 'BLOCKED'"
+          >
+            {{ selectedUser.statusDisplayName }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Email</span>
+          <span class="info-value">{{ selectedUser.email }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Số điện thoại</span>
+          <span class="info-value">{{ selectedUser.phone || 'Chưa cập nhật' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Địa chỉ</span>
+          <span class="info-value">{{ selectedUser.location || 'Chưa cập nhật' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Ngày tham gia</span>
+          <span class="info-value">{{ selectedUser.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </div>
+
+      <!-- Stats section -->
+      <div class="stats-section">
+        <h5>Thống kê hoạt động</h5>
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="material-symbols-outlined stat-box-icon">assignment</span>
+            <div class="stat-box-data">
+              <span class="stat-box-value">{{ selectedUser.totalExams || 0 }}</span>
+              <span class="stat-box-label">Đề thi đã làm</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <span class="material-symbols-outlined stat-box-icon">military_tech</span>
+            <div class="stat-box-data">
+              <span class="stat-box-value">{{ selectedUser.totalScore || 0 }}</span>
+              <span class="stat-box-label">Tổng số điểm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions section -->
+      <div class="actions-section">
+        <h5>Hành động quản lý</h5>
+        <div class="management-buttons">
+          <button
+            class="btn-manage-status"
+            [class.btn-lock]="selectedUser.statusCode === 'ACTIVE'"
+            [class.btn-unlock]="selectedUser.statusCode === 'BLOCKED'"
+            (click)="toggleUserStatus(selectedUser)"
+            [disabled]="isStatusUpdating"
+          >
+            <span class="material-symbols-outlined">
+              {{ selectedUser.statusCode === 'ACTIVE' ? 'lock' : 'lock_open' }}
+            </span>
+            {{ selectedUser.statusCode === 'ACTIVE' ? 'Khóa tài khoản này' : 'Mở khóa tài khoản này' }}
+          </button>
+
+          <button
+            class="btn-manage-role"
+            (click)="toggleUserRole(selectedUser)"
+          >
+            <span class="material-symbols-outlined">shield_person</span>
+            Thay đổi quyền thành {{ selectedUser.role === 'admin' ? 'Customer' : 'Admin' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-footer-close" (click)="closeDetailModal()">Đóng cửa sổ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONFIRM MODAL -->
+<!-- ============================================ -->
+<div class="modal-overlay" *ngIf="isConfirmModalOpen && confirmModalData" (click)="closeConfirmModal()">
+  <div class="modal-card fade-in-scale confirm-modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon-header" [ngStyle]="{'color': confirmModalData.type === 'danger' ? 'var(--error)' : 'var(--primary)'}">
+          {{ confirmModalData.type === 'danger' ? 'warning' : 'info' }}
+        </span>
+        <h3>{{ confirmModalData.title }}</h3>
+      </div>
+      <button class="btn-close-modal" (click)="closeConfirmModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="padding: 1.5rem 1.75rem;">
+      <p style="font-size: 1rem; color: var(--on-surface-variant); line-height: 1.5; margin: 0;">
+        {{ confirmModalData.message }}
+      </p>
+    </div>
+
+    <div class="modal-footer" style="gap: 0.75rem;">
+      <button class="btn-footer-close" (click)="closeConfirmModal()">{{ confirmModalData.cancelText }}</button>
+      <button 
+        class="btn-footer-action" 
+        [ngStyle]="{
+          'background-color': confirmModalData.type === 'danger' ? 'var(--error)' : 'var(--primary)',
+          'color': 'white',
+          'border': 'none',
+          'font-weight': '700',
+          'padding': '0.55rem 1.25rem',
+          'border-radius': '0.375rem',
+          'font-size': '0.825rem',
+          'cursor': 'pointer',
+          'transition': 'all 0.2s ease'
+        }"
+        onmouseover="this.style.opacity='0.9'"
+        onmouseout="this.style.opacity='1'"
+        (click)="onConfirmModalConfirm()"
+      >
+        {{ confirmModalData.confirmText }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- TOAST MESSAGE -->
+<!-- ============================================ -->
+<div
+  class="toast-notification"
+  *ngIf="toastMessage"
+  [class.toast-success]="toastType === 'success'"
+  [class.toast-error]="toastType === 'error'"
+>
+  <span class="material-symbols-outlined toast-icon">
+    {{ toastType === 'success' ? 'check_circle' : 'error' }}
+  </span>
+  <span class="toast-text">{{ toastMessage }}</span>
+</div>
