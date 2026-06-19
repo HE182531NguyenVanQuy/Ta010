@@ -34,7 +34,6 @@
     "@microsoft/signalr": "^10.0.0",
     "@types/chart.js": "^2.9.41",
     "chart.js": "^4.5.1",
-    "entities": "^8.0.0",
     "express": "^5.1.0",
     "lru-cache": "^11.5.1",
     "rxjs": "~7.8.0",

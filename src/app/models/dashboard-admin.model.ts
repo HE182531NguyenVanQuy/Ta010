@@ -9,6 +9,7 @@ export interface DashboardStatsDto {
 export interface TransactionDto {
   id: string;
   user: string;
+  userEmail?: string;
   initials: string;
   avatarBg: string;
   date: string;
