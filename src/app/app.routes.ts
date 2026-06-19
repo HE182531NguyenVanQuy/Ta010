@@ -48,6 +48,15 @@ export const routes: Routes = [
     path: 'dashboard',
     loadComponent: () => import('./pages/admin/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
+  {
+    path: 'admin',
+    children: [
+      {
+        path: 'users',
+        loadComponent: () => import('./pages/admin/user/user.component').then((m) => m.UserAdminComponent),
+      }
+    ]
+  },
   
 
   //customer routes

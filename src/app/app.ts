@@ -158,6 +158,6 @@ export class App {
     // Loại bỏ query parameters trước khi so sánh (ví dụ: /login?msg=... -> /login)
     const cleanUrl = url.split('?')[0];
     
-    return url.startsWith('/dashboard') || standalonePaths.includes(cleanUrl);
+    return url.startsWith('/dashboard') || url.startsWith('/admin') || standalonePaths.includes(cleanUrl);
   });
 }
