@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -19,6 +19,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   // Phải để protected hoặc public để template truy cập được
   protected router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   form = this.fb.group({ otp: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]] });
   email = '';
@@ -72,6 +73,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         this.form.controls['otp'].setErrors({ server: true });
         this.form.controls['otp'].markAsTouched();
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -86,6 +88,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         this.resendError = err?.error?.message ?? 'Không thể gửi lại mã OTP';
+        this.cdr.markForCheck();
       }
     });
   }
