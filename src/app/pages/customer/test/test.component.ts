@@ -11,7 +11,7 @@ export type NavState = 'empty' | 'answered';
 
 export interface Question {
   questionId: string;
-  questionNumber: number;
+  questionNumber: number | null;
   section?: string;
   questionText: string;
   optionA?: string;
@@ -20,6 +20,9 @@ export interface Question {
   optionD?: string;
   correctAnswer?: string;
   explanation?: string;
+  importOrder?: number;
+  displayOrder?: number;
+  sourceRow?: number;
 }
 
 export interface ExamData {
@@ -167,7 +170,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
 
   getQuestionOptions(question: Question): string[] {
     return [question.optionA, question.optionB, question.optionC, question.optionD]
-      .filter((option): option is string => !!option);
+      .filter((option): option is string => this.isRealOption(option));
   }
 
   getCorrectAnswer(question: Question): string {
@@ -666,18 +669,43 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       optionD: question.optionD ?? question.OptionD,
       correctAnswer: typeof correctAnswer === 'string' ? correctAnswer.trim().toUpperCase() : correctAnswer,
       explanation: question.explanation ?? question.Explanation,
+      importOrder: question.importOrder ?? question.ImportOrder ?? question.displayOrder ?? question.DisplayOrder ?? question.sourceRow ?? question.SourceRow,
+      displayOrder: question.displayOrder ?? question.DisplayOrder,
+      sourceRow: question.sourceRow ?? question.SourceRow,
     };
   }
 
   private setQuestions(rawQuestions: Question[]): void {
-    const sortedQuestions = this.sortQuestions(rawQuestions);
-    this.passageOnlyQuestions = sortedQuestions.filter(question => !this.isAnswerableQuestion(question));
-    this.questions = sortedQuestions.filter(question => this.isAnswerableQuestion(question));
+    const indexedQuestions = rawQuestions.map((question, index) => ({
+      ...question,
+      importOrder: this.getQuestionImportOrder(question, index),
+    }));
+
+    this.passageOnlyQuestions = indexedQuestions.filter(question => !this.isAnswerableQuestion(question));
+    this.questions = this.sortQuestions(indexedQuestions.filter(question => this.isAnswerableQuestion(question)));
     this.rebuildQuestionDisplay(this.passageOnlyQuestions);
   }
 
   private isAnswerableQuestion(question: Question): boolean {
     return this.getQuestionOptions(question).length > 0;
+  }
+
+  private isRealOption(option: unknown): option is string {
+    if (typeof option !== 'string') return option !== null && option !== undefined && String(option).trim() !== '';
+
+    const value = option.trim();
+    return !!value && !['N/A', 'NA', 'NULL', 'NONE', '-'].includes(value.toUpperCase());
+  }
+
+  private getQuestionImportOrder(question: Question, fallbackIndex = 0): number {
+    const candidates = [question.importOrder, question.displayOrder, question.sourceRow];
+
+    for (const candidate of candidates) {
+      const value = Number(candidate);
+      if (Number.isFinite(value)) return value;
+    }
+
+    return fallbackIndex;
   }
 
   private sortQuestions(questions: Question[]): Question[] {
@@ -689,9 +717,9 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
         return leftNumber - rightNumber;
       }
 
-      if (Number.isFinite(leftNumber) !== Number.isFinite(rightNumber)) {
-        return Number.isFinite(leftNumber) ? -1 : 1;
-      }
+      const leftOrder = this.getQuestionImportOrder(left);
+      const rightOrder = this.getQuestionImportOrder(right);
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder;
 
       return String(left.questionId).localeCompare(String(right.questionId));
     });
@@ -707,16 +735,28 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private attachStandalonePassages(passageOnlyQuestions: Question[]): void {
-    const readingPassages = this.sortQuestions(passageOnlyQuestions.filter(question =>
+    const readingPassages = [...passageOnlyQuestions].sort(
+      (left, right) => this.getQuestionImportOrder(left) - this.getQuestionImportOrder(right)
+    ).filter(question =>
       this.isReadingSection(question.section) || this.looksLikePassage(question.questionText)
-    ));
+    );
 
     for (const [index, passage] of readingPassages.entries()) {
-      const target = this.findFixedPassageTarget(passage, index) ?? this.findFirstQuestionForPassage(passage);
+      const target =
+        this.findImportOrderPassageTarget(passage) ??
+        this.findFixedPassageTarget(passage, index) ??
+        this.findFirstQuestionForPassage(passage);
       if (!target || this.questionPassages[target.questionId]) continue;
 
       this.questionPassages[target.questionId] = passage.questionText;
     }
+  }
+
+  private findImportOrderPassageTarget(passage: Question): Question | undefined {
+    const passageOrder = this.getQuestionImportOrder(passage, Number.NaN);
+    if (!Number.isFinite(passageOrder)) return undefined;
+
+    return this.questions.find(question => this.getQuestionImportOrder(question) > passageOrder);
   }
 
   private findFixedPassageTarget(passage: Question, index: number): Question | undefined {
@@ -957,7 +997,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
     return labels[this.getInferredQuestionType(question.questionNumber)] ?? labels['other'];
   }
 
-  private getInferredQuestionType(questionNumber: number): string {
+  private getInferredQuestionType(questionNumber: number | null): string {
     const number = Number(questionNumber);
 
     if (number >= 1 && number <= 4) return 'pronunciation';
