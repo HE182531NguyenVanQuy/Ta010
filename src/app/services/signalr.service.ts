@@ -2,7 +2,7 @@ import { Injectable, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HubConnection, HubConnectionBuilder, HttpTransportType, LogLevel } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { environment } from '../../environments/environment.prod';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 
@@ -61,7 +61,7 @@ export class SignalrService {
     this.hubConnection
       .start()
       .then(() => console.log('SignalR Connection started.'))
-      .catch(err => console.error('Error while starting SignalR connection: ' + err));
+      .catch((err: any) => console.error('Error while starting SignalR connection: ' + err));
 
     this.registerOnServerEvents();
   }
@@ -73,7 +73,7 @@ export class SignalrService {
           this.hubConnection = null;
           console.log('SignalR Connection stopped.');
         })
-        .catch(err => console.error('Error while stopping SignalR: ', err));
+        .catch((err: any) => console.error('Error while stopping SignalR: ', err));
     }
   }
 
