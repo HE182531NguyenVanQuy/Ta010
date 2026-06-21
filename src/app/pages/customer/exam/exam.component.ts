@@ -131,7 +131,7 @@ export class ExamComponent implements OnInit, OnDestroy {
     }
 
     this.subscriptions.add(
-      this.route.queryParams.subscribe(params => {
+      this.route.queryParams.subscribe((params: any) => {
         if (params['payment'] === 'success' || (params['code'] === '00' && params['orderCode'])) {
           const orderCode = params['orderCode'];
           

@@ -125,6 +125,14 @@
         </div>
       </div>
     </div>
+    <div class="security-card" *ngIf="!reviewMode">
+      <div class="security-title">Giám sát chống gian lận</div>
+      <div class="security-count" [class.danger]="altTabCount >= altTabLimit">
+        {{ altTabCount }}/{{ altTabLimit }} lần rời màn hình
+      </div>
+      <div class="security-meta">Tổng thời gian rời màn hình: {{ totalAwaySeconds }} giây</div>
+      <div class="security-warning" *ngIf="securityMessage">{{ securityMessage }}</div>
+    </div>
     <!-- PROGRESS CARD -->
     <div class="progress-card">
       <h3>Tiến độ làm bài</h3>
@@ -188,6 +196,7 @@
         <div class="modal-title">Đã chấm điểm xong</div>
         <div class="modal-score">{{ scoreDisplay }}/10</div>
         <div class="modal-sub">Đúng {{ correctCount }}/{{ totalQuestions }} câu</div>
+        <div class="modal-security" *ngIf="autoSubmitReason">{{ autoSubmitReason }} Báo cáo đã được gửi về email quản trị.</div>
         <div class="modal-stats">
           <div><strong>{{ correctCount }}</strong><span>Đúng</span></div>
           <div><strong>{{ wrongCount }}</strong><span>Sai</span></div>
