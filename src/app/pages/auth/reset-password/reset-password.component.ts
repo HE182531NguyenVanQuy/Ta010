@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -19,6 +19,7 @@ export class ResetPasswordComponent implements OnInit {
   private auth = inject(AuthService);
   private notification = inject(NotificationService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   form = this.fb.group({
     newPassword: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+/)]],
@@ -58,6 +59,7 @@ export class ResetPasswordComponent implements OnInit {
       error: (err: any) => {
         this.error = err?.error?.message ?? 'Không thể đổi mật khẩu';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }

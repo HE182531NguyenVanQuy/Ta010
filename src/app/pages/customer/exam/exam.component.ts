@@ -132,30 +132,43 @@ export class ExamComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.route.queryParams.subscribe((params: any) => {
-        if (params['payment'] === 'success' || (params['code'] === '00' && params['orderCode'])) {
+        const isCancelled = params['payment'] === 'cancel' || params['cancel'] === 'true' || params['status'] === 'CANCELLED';
+
+        if (isCancelled) {
+          // CANCEL must be checked FIRST — PayOS sends code=00 even on cancel redirects
+          this.notificationService.show('Giao dịch đã bị hủy. Bạn chưa bị trừ tiền.', 'info');
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
+            queryParamsHandling: 'merge'
+          });
+        } else if (params['payment'] === 'success' || (params['code'] === '00' && params['orderCode'])) {
           const orderCode = params['orderCode'];
           
           if (orderCode) {
-            // Manually verify return for local testing bypassing webhook
+            // Verify with backend that PayOS actually confirmed payment
             this.paymentService.verifyReturn(orderCode).subscribe({
-              next: () => {
-                this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.', 'success');
+              next: (res: any) => {
+                if (res?.status === 'CANCELLED' || res?.status === 'PENDING') {
+                  this.notificationService.show('Thanh toán chưa hoàn tất. Vui lòng thử lại.', 'error');
+                } else {
+                  this.notificationService.show('Thanh toán thành công! Gói học tập của bạn đang được kích hoạt.', 'success');
+                  this.pollSubscription(3, 1000);
+                }
                 this.router.navigate([], {
                   relativeTo: this.route,
                   queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
                   queryParamsHandling: 'merge'
                 });
-                // Poll just in case, but it should be instantaneous now
-                this.pollSubscription(3, 1000);
               },
               error: (err) => {
                 console.error('Error verifying return:', err);
+                this.notificationService.show('Không thể xác nhận thanh toán. Vui lòng liên hệ hỗ trợ.', 'error');
                 this.router.navigate([], {
                   relativeTo: this.route,
                   queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
                   queryParamsHandling: 'merge'
                 });
-                this.pollSubscription(6, 2000);
               }
             });
           } else {
@@ -169,12 +182,6 @@ export class ExamComponent implements OnInit, OnDestroy {
             // Poll for update: 6 attempts × 2 seconds = 12 second max wait
             this.pollSubscription(6, 2000);
           }
-        } else if (params['payment'] === 'cancel' || params['cancel'] === 'true') {
-           this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: { payment: null, code: null, id: null, cancel: null, status: null, orderCode: null },
-              queryParamsHandling: 'merge'
-            });
         }
       })
     );
