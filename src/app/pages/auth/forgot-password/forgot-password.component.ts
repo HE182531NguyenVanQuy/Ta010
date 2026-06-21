@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
@@ -18,6 +18,7 @@ export class ForgotPasswordComponent {
   private auth = inject(AuthService);
   private state = inject(PasswordResetStateService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
@@ -39,8 +40,12 @@ export class ForgotPasswordComponent {
       error: (err: any) => {
         this.error = err?.error?.message ?? 'Lỗi khi gửi mã OTP';
         this.loading = false;
+        this.cdr.markForCheck();
       },
-      complete: () => this.loading = false
+      complete: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
-}
+}

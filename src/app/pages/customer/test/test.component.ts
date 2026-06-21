@@ -647,9 +647,7 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
     this.correctCount = typeof correctAnswers === 'number' ? correctAnswers : 0;
 
     const rawScore = Number(submittedAttempt?.score ?? submittedAttempt?.Score);
-    this.finalScore = Number.isFinite(rawScore)
-      ? (rawScore > 10 ? rawScore / 10 : rawScore)
-      : 0;
+    this.finalScore = Number.isFinite(rawScore) ? rawScore : 0;
     this.receivedApiScore = true;
   }
 
