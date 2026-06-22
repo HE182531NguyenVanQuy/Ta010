@@ -5,6 +5,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ProfileResponse, UpdateProfileRequest } from '../../../models/auth.models';
 import { Router, RouterModule } from '@angular/router';
 import { Location } from '@angular/common';
+import { AiRoadmapService, StudyRoadmap } from '../../../services/ai-roadmap.service';
 
 @Component({
   selector: 'app-profile',
@@ -20,11 +21,16 @@ export class ProfileComponent implements OnInit {
   private router = inject(Router);
   private location = inject(Location);
   private cdr = inject(ChangeDetectorRef);
+  private aiRoadmapService = inject(AiRoadmapService);
 
   profile?: ProfileResponse;
   loading = false;
+  roadmapLoading = false;
   successMessage = '';
   errorMessage = '';
+  roadmapMessage = '';
+  roadmapError = '';
+  studyRoadmap: StudyRoadmap | null = null;
   activeTab = signal<'general' | 'security'>('general');
 
   form = this.fb.group({
@@ -60,6 +66,7 @@ export class ProfileComponent implements OnInit {
           avatar: p.avatar ?? ''
         });
         this.loading = false;
+        this.loadRoadmap();
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -67,6 +74,35 @@ export class ProfileComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private async loadRoadmap(): Promise<void> {
+    try {
+      this.studyRoadmap = await this.aiRoadmapService.getSavedRoadmap();
+    } catch {
+      this.studyRoadmap = null;
+    } finally {
+      this.cdr.markForCheck();
+    }
+  }
+
+  async addRoadmap(): Promise<void> {
+    this.roadmapMessage = '';
+    this.roadmapError = '';
+
+    try {
+      this.roadmapLoading = true;
+      const roadmap = await this.aiRoadmapService.generateRoadmap();
+      this.studyRoadmap = roadmap;
+      this.roadmapMessage = 'Đã tạo lộ trình học cá nhân hóa từ attempt gần nhất.';
+    } catch (err) {
+      this.roadmapError = err instanceof Error
+        ? err.message
+        : 'Không tạo được lộ trình, vui lòng thử lại.';
+    } finally {
+      this.roadmapLoading = false;
+      this.cdr.markForCheck();
+    }
   }
 
   submit(): void {

@@ -47,6 +47,12 @@ interface AltTabEvent {
   durationSeconds: number;
 }
 
+interface SubmittedAnswerPayload {
+  questionId: string;
+  questionNumber: number | null;
+  userAnswer: string;
+}
+
 @Component({
   selector: 'app-test',
   standalone: true,
@@ -544,12 +550,27 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
   private async syncAnswersToAttempt(): Promise<void> {
     if (!this.attemptId) return;
 
-    for (const [questionId, userAnswer] of Object.entries(this.userAnswers)) {
+    for (const { questionId, userAnswer } of this.buildSubmittedAnswers()) {
       await this.examService.submitAnswer(this.attemptId, {
         questionId,
         userAnswer
       });
     }
+  }
+
+  private buildSubmittedAnswers(): SubmittedAnswerPayload[] {
+    return this.questions
+      .map(question => {
+        const userAnswer = this.userAnswers[question.questionId];
+        if (!userAnswer) return null;
+
+        return {
+          questionId: question.questionId,
+          questionNumber: question.questionNumber,
+          userAnswer
+        };
+      })
+      .filter((answer): answer is SubmittedAnswerPayload => answer !== null);
   }
 
   // ── CSS class cho ô nav ─────────────────────────────────────
@@ -599,13 +620,17 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
       await this.syncAnswersToAttempt();
 
       const securityReport = this.buildSecurityReport(this.autoSubmittingForSecurity);
+      const submittedAnswers = this.buildSubmittedAnswers();
       const result = await this.examService.submitExam(this.attemptId!, {
         userAnswers: this.userAnswers,
+        answers: submittedAnswers,
+        submittedAnswers,
         securityReport
       });
       const resultPayload = result as any;
       const submittedAttempt = resultPayload.data ?? resultPayload;
       this.applySubmittedAttempt(submittedAttempt);
+      this.saveAnalysisSnapshot();
     } catch (error) {
       console.error('Error submitting exam:', error);
       this.scoringErrorMessage = error instanceof Error
@@ -652,6 +677,52 @@ export class TestComponent implements OnInit, OnDestroy, AfterViewInit {
     const rawScore = Number(submittedAttempt?.score ?? submittedAttempt?.Score);
     this.finalScore = Number.isFinite(rawScore) ? rawScore : 0;
     this.receivedApiScore = true;
+  }
+
+  private saveAnalysisSnapshot(): void {
+    const storage = this.storage;
+    if (!storage) return;
+
+    const userAnswersByNumber: { [questionNumber: number]: string } = {};
+    const correctAnswersByNumber: { [questionNumber: number]: string } = {};
+    const questionTextsByNumber: { [questionNumber: number]: string } = {};
+    const wrongQNums: number[] = [];
+
+    this.questions.forEach((question, index) => {
+      const questionNumber = question.questionNumber ?? index + 1;
+      const userAnswer = this.userAnswers[question.questionId] ?? '';
+      const correctAnswer = this.getCorrectAnswer(question);
+
+      userAnswersByNumber[questionNumber] = userAnswer;
+      correctAnswersByNumber[questionNumber] = correctAnswer;
+      questionTextsByNumber[questionNumber] = this.questionDisplayText[question.questionId] || question.questionText;
+
+      if (!userAnswer || (correctAnswer && userAnswer !== correctAnswer)) {
+        wrongQNums.push(questionNumber);
+      }
+    });
+
+    const payload = {
+      examId: this.examData?.examId ?? this.currentExamId,
+      examTitle: this.examData?.title ?? '',
+      attemptId: this.attemptId,
+      submittedAt: new Date().toISOString(),
+      correct: this.correctCount,
+      wrong: Math.max(0, this.totalQuestions - this.correctCount - this.skippedCount),
+      skip: this.skippedCount,
+      score: this.finalScore,
+      scoreStr: this.scoreDisplay,
+      userAnswers: userAnswersByNumber,
+      correctAnswers: correctAnswersByNumber,
+      questionTexts: questionTextsByNumber,
+      wrongQNums,
+    };
+
+    try {
+      storage.setItem('tao10_ai_analysis', JSON.stringify(payload));
+    } catch {
+      // Ignore storage errors so submitting the exam is not blocked.
+    }
   }
 
   private normalizeQuestion(question: any): Question {
