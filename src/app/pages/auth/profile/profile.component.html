@@ -68,6 +68,13 @@
                 </div>
               </div>
             </div>
+
+            <div class="roadmap-actions">
+              <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading">
+                <span class="material-symbols-outlined" *ngIf="!roadmapLoading">sync</span>
+                <span>{{ roadmapLoading ? 'Đang cập nhật...' : 'Cập nhật lộ trình' }}</span>
+              </button>
+            </div>
           </ng-container>
 
           <ng-template #addRoadmapTpl>
@@ -207,6 +214,13 @@
                 </ul>
               </div>
             </div>
+          </div>
+
+          <div class="roadmap-actions">
+            <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading">
+              <span class="material-symbols-outlined" *ngIf="!roadmapLoading">sync</span>
+              <span>{{ roadmapLoading ? 'Đang cập nhật...' : 'Cập nhật lộ trình' }}</span>
+            </button>
           </div>
         </ng-container>
 

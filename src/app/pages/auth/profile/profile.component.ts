@@ -105,6 +105,42 @@ export class ProfileComponent implements OnInit {
     }
   }
 
+  async updateRoadmap(): Promise<void> {
+    if (!this.studyRoadmap) {
+      await this.addRoadmap();
+      return;
+    }
+
+    this.roadmapMessage = '';
+    this.roadmapError = '';
+
+    const previousAttemptKey = this.getRoadmapAttemptKey(this.studyRoadmap);
+
+    try {
+      this.roadmapLoading = true;
+      const roadmap = await this.aiRoadmapService.generateRoadmap();
+
+      if (previousAttemptKey && this.getRoadmapAttemptKey(roadmap) === previousAttemptKey) {
+        this.roadmapError = 'Bạn cần làm bài ít nhất 1 lần sau khi có lộ trình cũ để cập nhật';
+        return;
+      }
+
+      this.studyRoadmap = roadmap;
+      this.roadmapMessage = 'Đã cập nhật lộ trình học từ attempt mới nhất.';
+    } catch (err) {
+      this.roadmapError = err instanceof Error
+        ? err.message
+        : 'Không cập nhật được lộ trình, vui lòng thử lại.';
+    } finally {
+      this.roadmapLoading = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  private getRoadmapAttemptKey(roadmap: StudyRoadmap): string | null {
+    return roadmap.sourceAttemptId || roadmap.sourceSubmittedAt || null;
+  }
+
   submit(): void {
     this.successMessage = '';
     this.errorMessage = '';

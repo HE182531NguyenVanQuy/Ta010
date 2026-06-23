@@ -288,7 +288,14 @@
   }
 }
 
-.btn-add-roadmap {
+.roadmap-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.btn-add-roadmap,
+.btn-update-roadmap {
   width: 100%;
   border: none;
   border-radius: 12px;
@@ -316,6 +323,11 @@
   .material-symbols-outlined {
     font-size: 20px;
   }
+}
+
+.btn-update-roadmap {
+  width: auto;
+  min-width: 180px;
 }
 
 .roadmap-card-wide .btn-add-roadmap {
@@ -368,6 +380,11 @@
   }
 
   .roadmap-card-wide .btn-add-roadmap {
+    width: 100%;
+  }
+
+  .roadmap-actions,
+  .btn-update-roadmap {
     width: 100%;
   }
 }
