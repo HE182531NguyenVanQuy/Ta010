@@ -160,20 +160,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       const exams = await this.examService.getExams(1, 6);
       if (exams && exams.length > 0) {
-        this.examCards = exams.map((e: any) => ({
-          id: e.examId,
-          title: e.title,
-          questions: e.questionsCount ?? 0,
-          duration: e.durationTime,
-          views: `${(e.viewsCount ?? 0) >= 1000 ? ((e.viewsCount ?? 0) / 1000).toFixed(1) + 'k' : e.viewsCount} lượt`,
-          progress: e.progressPercentage ?? 0,
-          difficulty: e.level ?? 'Trung bình',
-          difficultyClass: e.level === 'Khó' ? 'diff-hard' : e.level === 'Dễ' ? 'diff-easy' : 'diff-medium',
-          action: e.progressPercentage === 100 ? 'Xem KQ →' : e.progressPercentage ? 'Tiếp tục →' : 'Làm bài →',
-          cover: this.getRandomCoverClass(e.examId),
-          tag: e.isPremium ? '🔥 Premium' : 'Miễn phí',
-          tagClass: e.isPremium ? 'tag-hot' : 'tag-free'
-        }));
+        this.examCards = exams.map((e: any) => {
+          const difficulty = this.normalizeDifficulty(e.level);
+
+          return {
+            id: e.examId,
+            title: e.title,
+            questions: e.questionsCount ?? 0,
+            duration: e.durationTime,
+            views: `${(e.viewsCount ?? 0) >= 1000 ? ((e.viewsCount ?? 0) / 1000).toFixed(1) + 'k' : e.viewsCount} lượt`,
+            progress: e.progressPercentage ?? 0,
+            difficulty,
+            difficultyClass: difficulty === 'hard' ? 'diff-hard' : difficulty === 'easy' ? 'diff-easy' : 'diff-medium',
+            action: e.progressPercentage === 100 ? 'Xem KQ →' : e.progressPercentage ? 'Tiếp tục →' : 'Làm bài →',
+            cover: this.getRandomCoverClass(e.examId),
+            tag: e.isPremium ? '🔥 Premium' : 'Miễn phí',
+            tagClass: e.isPremium ? 'tag-hot' : 'tag-free'
+          };
+        });
       }
     } catch (err) {
       console.error('Failed to load exams from API, using static mock data.', err);
@@ -181,6 +185,20 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   
+
+  private normalizeDifficulty(level?: string): 'easy' | 'medium' | 'hard' {
+    const value = (level || '').trim().toLowerCase();
+
+    if (value.includes('easy') || value.includes('dễ') || value.includes('dá»…') || value === 'de') {
+      return 'easy';
+    }
+
+    if (value.includes('hard') || value.includes('khó') || value.includes('khÃ³') || value === 'kho') {
+      return 'hard';
+    }
+
+    return 'medium';
+  }
 
   private updateLeaderboardUI(data: LeaderboardItem[]): void {
     if (!data || data.length === 0) return;

@@ -11,7 +11,7 @@ const MOCK_EXAMS = [
     description: 'De thi thu chuan cau truc ky thi vao lop 10',
     questionsCount: 50,
     durationTime: 120,
-    level: 'Trung binh',
+    level: 'medium',
     year: 2026,
     examType: 'De thi thu',
     viewsCount: 2450,
@@ -24,7 +24,7 @@ const MOCK_EXAMS = [
     description: 'De thi chinh thuc ky thi vao lop 10 cua Ha Noi',
     questionsCount: 50,
     durationTime: 120,
-    level: 'Kho',
+    level: 'hard',
     year: 2024,
     examType: 'De chinh thuc',
     viewsCount: 5230,
@@ -37,7 +37,7 @@ const MOCK_EXAMS = [
     description: 'Bai tap on tap chi tiet ve cac thi hien tai',
     questionsCount: 30,
     durationTime: 45,
-    level: 'De',
+    level: 'easy',
     year: 2026,
     examType: 'De thi thu',
     viewsCount: 1890,
@@ -50,7 +50,7 @@ const MOCK_EXAMS = [
     description: 'De thi thu lan 2 cua TP.HCM nam 2026',
     questionsCount: 50,
     durationTime: 120,
-    level: 'Trung binh',
+    level: 'medium',
     year: 2026,
     examType: 'De thi thu',
     viewsCount: 3200,
@@ -63,7 +63,7 @@ const MOCK_EXAMS = [
     description: 'Bo bai tap luyen tap ve cau phuc',
     questionsCount: 40,
     durationTime: 60,
-    level: 'Trung binh',
+    level: 'medium',
     year: 2026,
     examType: 'De thi thu',
     viewsCount: 1560,
@@ -76,7 +76,7 @@ const MOCK_EXAMS = [
     description: 'De thi chinh thuc ky thi vao lop 10 cua TP.HCM',
     questionsCount: 50,
     durationTime: 120,
-    level: 'Kho',
+    level: 'hard',
     year: 2024,
     examType: 'De chinh thuc',
     viewsCount: 4560,
@@ -91,7 +91,7 @@ const IS_DEV = !IS_BROWSER || (typeof ngDevMode !== 'undefined' && ngDevMode);
 
 export interface Question {
   questionId: string;
-  questionNumber: number;
+  questionNumber: number | null;
   section?: string;
   questionText: string;
   optionA?: string;
@@ -100,6 +100,24 @@ export interface Question {
   optionD?: string;
   correctAnswer?: string;
   explanation?: string;
+  importOrder?: number;
+  displayOrder?: number;
+  sourceRow?: number;
+}
+
+export type ExamPackageCode = 'free' | '1Month' | '3Month' | '6Month' | '12Month';
+
+export interface ExamImportPackage {
+  code: ExamPackageCode;
+  name: string;
+}
+
+export interface ExamImportResponse {
+  importedCount?: number;
+  packageCodes?: ExamPackageCode[];
+  packageNames?: string[];
+  message?: string;
+  data?: unknown;
 }
 
 export interface Exam {
@@ -171,6 +189,13 @@ export interface ExamSecurityReport {
 export class ExamService {
   private static readonly RETRY_ATTEMPTS = 2;
   private static readonly RETRY_DELAY = 1000;
+  private static readonly PACKAGE_IMPORT_CHAIN: ExamImportPackage[] = [
+    { code: 'free', name: 'Gói Dùng Thử' },
+    { code: '1Month', name: 'Gói Cấp Tốc' },
+    { code: '3Month', name: 'Gói Chuyên Sâu' },
+    { code: '6Month', name: 'Gói Nâng Cao' },
+    { code: '12Month', name: 'Gói Premium' },
+  ];
 
   async getExams(pageNumber: number = 1, pageSize: number = 10): Promise<any> {
     try {
@@ -215,6 +240,39 @@ export class ExamService {
       // Return mock exam with sample questions
       return this.getMockExamWithQuestions(examId);
     }
+  }
+
+  getImportPackagesFromCode(code: ExamPackageCode): ExamImportPackage[] {
+    const startIndex = ExamService.PACKAGE_IMPORT_CHAIN.findIndex(pkg => pkg.code === code);
+    if (startIndex < 0) {
+      throw new Error(`Unsupported package code: ${code}`);
+    }
+
+    return ExamService.PACKAGE_IMPORT_CHAIN.slice(startIndex);
+  }
+
+  async importExamFileByPackageCode(file: File, code: ExamPackageCode): Promise<ExamImportResponse> {
+    const packages = this.getImportPackagesFromCode(code);
+    const formData = new FormData();
+
+    formData.append('file', file);
+    formData.append('code', code);
+    formData.append('packageCode', code);
+    formData.append('packageName', packages[0].name);
+    formData.append('targetPackageCodes', JSON.stringify(packages.map(pkg => pkg.code)));
+    formData.append('targetPackageNames', JSON.stringify(packages.map(pkg => pkg.name)));
+
+    const response = await this.fetchWithRetry(
+      `${API_BASE}/ExamImport/excel/by-package-code?code=${encodeURIComponent(code)}`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: formData
+      }
+    );
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return response.json();
   }
 
   async startExamAttempt(payload: { examId: string; userId?: string | null }): Promise<UserExamAttempt> {
@@ -325,7 +383,11 @@ export class ExamService {
   }
 
   private getJsonHeaders(): HeadersInit {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    return { ...this.getAuthHeaders(), 'Content-Type': 'application/json' };
+  }
+
+  private getAuthHeaders(): HeadersInit {
+    const headers: Record<string, string> = {};
     const token = this.getAccessToken();
 
     if (token) {

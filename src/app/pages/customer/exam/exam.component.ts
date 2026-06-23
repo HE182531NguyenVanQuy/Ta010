@@ -659,6 +659,7 @@ export class ExamComponent implements OnInit, OnDestroy {
 
   private toExamCard(exam: Exam, index: number, newestExamId: string | null): ExamCard {
     const level = exam.level?.trim() || '';
+    const normalizedLevel = level ? this.normalizeLevel(level) : '';
     const covers = ['cover-blue', 'cover-sky', 'cover-teal', 'cover-indigo', 'cover-emerald', 'cover-violet'];
 
     return {
@@ -668,8 +669,8 @@ export class ExamComponent implements OnInit, OnDestroy {
       questionsCount: exam.questionsCount || 0,
       durationTime: exam.durationTime,
       viewsCount: exam.viewsCount?.toString() || '0',
-      level: level || '—',
-      levelClass: level ? this.getLevelClass(level) : 'diff-medium',
+      level: normalizedLevel ? this.getLevelLabel(normalizedLevel, level) : '-',
+      levelClass: normalizedLevel ? this.getLevelClass(normalizedLevel) : 'diff-medium',
       action: 'Làm bài →',
       cover: covers[index % covers.length],
       tag: exam.examId === newestExamId ? 'Mới' : 'Đề thi',
@@ -722,9 +723,9 @@ export class ExamComponent implements OnInit, OnDestroy {
 
   private getLevelLabel(id: string, raw: string): string {
     const labels: Record<string, string> = {
-      easy: 'Dễ',
-      medium: 'Trung bình',
-      hard: 'Khó',
+      easy: 'easy',
+      medium: 'medium',
+      hard: 'hard',
     };
 
     return labels[id] ?? raw;
@@ -893,10 +894,10 @@ export class ExamComponent implements OnInit, OnDestroy {
     if (name.includes('Cấp Tốc')) {
       return ['30 bộ đề thi chuẩn', 'Thời hạn 1 tháng', ...defaultFeatures, 'Hỗ trợ cơ bản'];
     }
-    if (name.includes('Nâng Cao')) {
+    if (name.includes('Chuyên Sâu') || name.includes('ChuyÃªn SÃ¢u')) {
       return ['65 bộ đề thi chuẩn', 'Thời hạn 3 tháng', ...defaultFeatures, 'Bảng điều khiển cá nhân'];
     }
-    if (name.includes('Chuyên Sâu')) {
+    if (name.includes('Nâng Cao') || name.includes('NÃ¢ng Cao')) {
       return ['150+ bộ đề thi chuẩn', 'Thời hạn 6 tháng', ...defaultFeatures, 'Phân tích kết quả chuyên sâu'];
     }
     if (name.includes('Premium')) {

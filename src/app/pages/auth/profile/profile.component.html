@@ -31,6 +31,63 @@
           <div class="badge-role">{{ profile?.role || 'Học viên' }}</div>
         </div>
 
+        <div class="learning-roadmap-card roadmap-card-sidebar">
+          <div class="roadmap-card-head">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <div>
+              <h4>Lộ trình học AI</h4>
+              <p *ngIf="studyRoadmap; else noRoadmapTitle">Dựa trên attempt gần nhất</p>
+              <ng-template #noRoadmapTitle>
+                <p>Phân tích bài làm để cá nhân hóa</p>
+              </ng-template>
+            </div>
+          </div>
+
+          <ng-container *ngIf="studyRoadmap; else addRoadmapTpl">
+            <p class="roadmap-summary">{{ studyRoadmap.summary }}</p>
+            <div class="roadmap-meta">
+              <span>
+                <span class="material-symbols-outlined">schedule</span>
+                {{ studyRoadmap.dailyTime }}
+              </span>
+              <span>
+                <span class="material-symbols-outlined">flag</span>
+                {{ studyRoadmap.nextAction }}
+              </span>
+            </div>
+
+            <div class="roadmap-weeks">
+              <div class="roadmap-week" *ngFor="let week of studyRoadmap.weeks; let i = index">
+                <div class="week-index">{{ i + 1 }}</div>
+                <div>
+                  <strong>{{ week.title }}</strong>
+                  <p>{{ week.goal }}</p>
+                  <ul>
+                    <li *ngFor="let task of week.tasks">{{ task }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="roadmap-actions">
+              <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading">
+                <span class="material-symbols-outlined" *ngIf="!roadmapLoading">sync</span>
+                <span>{{ roadmapLoading ? 'Đang cập nhật...' : 'Cập nhật lộ trình' }}</span>
+              </button>
+            </div>
+          </ng-container>
+
+          <ng-template #addRoadmapTpl>
+            <button type="button" class="btn-add-roadmap" (click)="addRoadmap()" [disabled]="roadmapLoading">
+              <span class="material-symbols-outlined" *ngIf="!roadmapLoading">add_task</span>
+              <span>{{ roadmapLoading ? 'Đang tạo lộ trình...' : 'Thêm lộ trình' }}</span>
+            </button>
+          </ng-template>
+
+          <div class="roadmap-message success" *ngIf="roadmapMessage">{{ roadmapMessage }}</div>
+          <div class="roadmap-message error" *ngIf="roadmapError">{{ roadmapError }}</div>
+        </div>
+
         <nav class="inner-tabs">
           <button [class.active]="activeTab() === 'general'" (click)="setTab('general')">
             <span class="material-symbols-outlined">account_circle</span>
@@ -117,6 +174,68 @@
             </button>
           </div>
         </form>
+      </section>
+
+      <section class="learning-roadmap-card roadmap-card-wide">
+        <div class="roadmap-card-head">
+          <span class="material-symbols-outlined">auto_awesome</span>
+          <div>
+            <h4>Lộ trình học AI</h4>
+            <p *ngIf="studyRoadmap; else noRoadmapTitleWide">Dựa trên attempt gần nhất</p>
+            <ng-template #noRoadmapTitleWide>
+              <p>Phân tích bài làm để cá nhân hóa</p>
+            </ng-template>
+          </div>
+        </div>
+
+        <ng-container *ngIf="studyRoadmap; else addRoadmapTplWide">
+          <div class="roadmap-wide-top">
+            <p class="roadmap-summary">{{ studyRoadmap.summary }}</p>
+            <div class="roadmap-meta">
+              <span>
+                <span class="material-symbols-outlined">schedule</span>
+                {{ studyRoadmap.dailyTime }}
+              </span>
+              <span>
+                <span class="material-symbols-outlined">flag</span>
+                {{ studyRoadmap.nextAction }}
+              </span>
+            </div>
+          </div>
+
+          <div class="roadmap-weeks">
+            <div class="roadmap-week" *ngFor="let week of studyRoadmap.weeks; let i = index">
+              <div class="week-index">{{ i + 1 }}</div>
+              <div>
+                <strong>{{ week.title }}</strong>
+                <p>{{ week.goal }}</p>
+                <ul>
+                  <li *ngFor="let task of week.tasks">{{ task }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="roadmap-actions">
+            <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading">
+              <span class="material-symbols-outlined" *ngIf="!roadmapLoading">sync</span>
+              <span>{{ roadmapLoading ? 'Đang cập nhật...' : 'Cập nhật lộ trình' }}</span>
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #addRoadmapTplWide>
+          <div class="roadmap-empty-row">
+            <p>Chưa có lộ trình. AI sẽ dùng attempt hoàn thành gần nhất để phân tích và tạo kế hoạch học.</p>
+            <button type="button" class="btn-add-roadmap" (click)="addRoadmap()" [disabled]="roadmapLoading">
+              <span class="material-symbols-outlined" *ngIf="!roadmapLoading">add_task</span>
+              <span>{{ roadmapLoading ? 'Đang tạo lộ trình...' : 'Thêm lộ trình' }}</span>
+            </button>
+          </div>
+        </ng-template>
+
+        <div class="roadmap-message success" *ngIf="roadmapMessage">{{ roadmapMessage }}</div>
+        <div class="roadmap-message error" *ngIf="roadmapError">{{ roadmapError }}</div>
       </section>
     </div>
   </main>
