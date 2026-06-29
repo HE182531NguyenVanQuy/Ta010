@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgClass, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ExamService } from '../../../services/exam.service';
 import { SignalrService, LeaderboardItem } from '../../../services/signalr.service';
+import { AuthService } from '../../../services/auth.service';
 
 interface ExamCard {
   id: string;
@@ -53,13 +54,18 @@ interface TestimonialItem {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, NgClass, CommonModule],
+  imports: [RouterLink, CommonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private examService = inject(ExamService);
   private signalrService = inject(SignalrService);
+  private authService = inject(AuthService);
+
+  get isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
 
   private leaderboardSub: Subscription | null = null;
 
@@ -67,7 +73,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   // blogItems: BlogItem[] = [];
 
   // Static/Config sections
-  
+
   topics = [
     { name: 'Thì động từ', count: '12 chủ điểm · 240 bài', emoji: '⏰' },
     { name: 'Câu bị động', count: '8 chủ điểm · 160 bài', emoji: '🔄' },
@@ -105,7 +111,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       thumbClass: 'blog-thumb-purple',
     },
   ];
-  
+
   leaderboard = [
     { rank: '🏆', rankClass: 'rank-1', name: 'Nguyễn Minh Anh', score: 'Hà Nội · 48 bài', points: '9,850', initial: 'N', avatarBg: 'linear-gradient(135deg,#0ea5e9,#38bdf8)' },
     { rank: '🥈', rankClass: 'rank-2', name: 'Trần Thị Lan', score: 'TP.HCM · 45 bài', points: '9,420', initial: 'T', avatarBg: 'linear-gradient(135deg,#10b981,#34d399)' },
@@ -130,9 +136,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   ];
 
   testimonials: TestimonialItem[] = [
-    { text: 'Nhờ TaO10 mình đã tăng từ 6.5 lên 9.0 trong kỳ thi thật! Hệ thống đề thi rất đầy đủ, giải thích chi tiết và dễ hiểu.', name: 'Nguyễn Minh Châu', meta: 'Học sinh lớp 9 – Hà Nội', initial: 'M', avatarBg: 'linear-gradient(135deg,#0ea5e9,#7dd3fc)' },
-    { text: 'Website có giao diện đẹp, dễ dùng. Mình thích nhất tính năng thi thử mô phỏng phòng thi thực tế, giúp mình bớt hồi hộp khi thi thật.', name: 'Trần Bảo Trân', meta: 'Học sinh lớp 9 – TP.HCM', initial: 'T', avatarBg: 'linear-gradient(135deg,#10b981,#34d399)' },
-    { text: 'Bộ chuyên đề ngữ pháp rất có hệ thống. Mình ôn trong 2 tháng và đạt 8.5 điểm thi vào lớp 10 chuyên Anh!', name: 'Lê Khánh Huyền', meta: 'Học sinh lớp 9 – Đà Nẵng', initial: 'H', avatarBg: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+    { text: 'Nhờ TaO10 mình đã tăng từ 5.5 lên 8.0 trong kỳ thi thật! Hệ thống đề thi rất đầy đủ, giải thích chi tiết và dễ hiểu.', name: 'Dương Hữu Hà', meta: 'Học sinh lớp 9 – Hà Nội', initial: 'M', avatarBg: 'linear-gradient(135deg,#0ea5e9,#7dd3fc)' },
+    { text: 'Website có giao diện đẹp, dễ dùng. Mình thích nhất tính năng thi thử mô phỏng phòng thi thực tế, giúp mình bớt hồi hộp khi thi thật.', name: 'Trần Xuân Quang', meta: 'Học sinh lớp 9 – Quận Long Biên, Hà Nội', initial: 'T', avatarBg: 'linear-gradient(135deg,#10b981,#34d399)' },
+    { text: 'Bộ chuyên đề ôn thi rất có hệ thống. Mình ôn trong thời gian ngắn và kết quả thi rất tốt!', name: 'Lý Thu Linh', meta: 'Học sinh lớp 9 – Hà Nội', initial: 'H', avatarBg: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
   ];
 
   ngOnInit(): void {
@@ -184,8 +190,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  
-
   private normalizeDifficulty(level?: string): 'easy' | 'medium' | 'hard' {
     const value = (level || '').trim().toLowerCase();
 
@@ -209,11 +213,11 @@ export class HomeComponent implements OnInit, OnDestroy {
       score: item.score,
       points: item.points,
       initial: item.initial,
-      avatarBg: idx === 0 ? 'linear-gradient(135deg,#0ea5e9,#38bdf8)' : 
-               idx === 1 ? 'linear-gradient(135deg,#10b981,#34d399)' :
-               idx === 2 ? 'linear-gradient(135deg,#f59e0b,#fcd34d)' :
-               idx === 3 ? 'linear-gradient(135deg,#8b5cf6,#a78bfa)' :
-               'linear-gradient(135deg,#ec4899,#f9a8d4)'
+      avatarBg: idx === 0 ? 'linear-gradient(135deg,#0ea5e9,#38bdf8)' :
+        idx === 1 ? 'linear-gradient(135deg,#10b981,#34d399)' :
+          idx === 2 ? 'linear-gradient(135deg,#f59e0b,#fcd34d)' :
+            idx === 3 ? 'linear-gradient(135deg,#8b5cf6,#a78bfa)' :
+              'linear-gradient(135deg,#ec4899,#f9a8d4)'
     }));
   }
 
