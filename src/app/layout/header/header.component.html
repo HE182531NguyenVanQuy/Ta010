@@ -30,7 +30,7 @@
     <nav>
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Trang chủ</a>
       <a routerLink="/de-thi" routerLinkActive="active">Đề thi</a>
-      <a routerLink="/tai-lieu" routerLinkActive="active">Tài liệu</a>
+      <a class="disabled-link" aria-disabled="true" tabindex="-1">Tài liệu</a>
       <a routerLink="/dien-dan" routerLinkActive="active">Diễn đàn</a>
     </nav>
     <div class="header-actions">
@@ -60,7 +60,7 @@
     <select class="search-filter" aria-label="Lọc tìm kiếm">
       <option>Tất cả</option>
       <option>Đề thi</option>
-      <option>Tài liệu</option>
+      <option disabled>Tài liệu</option>
     </select>
     <button type="button" class="btn-search">Tìm kiếm</button>
   </div>
