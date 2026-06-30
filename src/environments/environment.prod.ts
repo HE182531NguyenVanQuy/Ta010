@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:5185/api'
+  apiUrl: 'https://tao10-backend-l70w.onrender.com/api'
 };
 
