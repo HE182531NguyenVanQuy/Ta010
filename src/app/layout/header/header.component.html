@@ -1,21 +1,16 @@
 @if (noticeVisible) {
-  <div class="notice-bar" role="banner">
-    📣 Kỳ thi tuyển sinh vào lớp 10 năm 2026 sắp diễn ra! &nbsp;
-    <a routerLink="/">Xem lịch thi ngay →</a>
-    <button type="button" class="notice-close" (click)="closeNotice()" aria-label="Đóng">✕</button>
-  </div>
+<div class="notice-bar" role="banner">
+  📣 Kỳ thi tuyển sinh vào lớp 10 năm 2026 sắp diễn ra! &nbsp;
+  <a href="https://xaydungchinhsach.chinhphu.vn/chi-tiet-lich-thi-tuyen-sinh-vao-lop-10-tai-ha-noi-119260312193010783.htm"
+    target="_blank" rel="noopener noreferrer">Xem lịch thi ngay →</a>
+  <button type="button" class="notice-close" (click)="closeNotice()" aria-label="Đóng">✕</button>
+</div>
 }
 
 <div class="topbar">
   <div class="topbar-left">
-    <span>📞 Hỗ trợ: 1900-0000</span>
-    <span>✉️ <a href="mailto:tao10&#64;gmail.com">tao10&#64;gmail.com</a></span>
-  </div>
-  <div>
-    <a routerLink="/about">Về chúng tôi</a>
-    <a routerLink="/contact">Liên hệ</a>
-    <a routerLink="/news">Tin tức</a>
-    <a routerLink="/faq">FAQ</a>
+    <span>📞 Hỗ trợ: 038-979-8626</span>
+    <span>✉️ <a href="mailto:tienganhonluyen10&#64;gmail.com">tienganhonluyen10&#64;gmail.com</a></span>
   </div>
 </div>
 
@@ -30,38 +25,18 @@
     <nav>
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Trang chủ</a>
       <a routerLink="/de-thi" routerLinkActive="active">Đề thi</a>
-      <a class="disabled-link" aria-disabled="true" tabindex="-1">Tài liệu</a>
-      <a routerLink="/dien-dan" routerLinkActive="active">Diễn đàn</a>
+      <!-- <a routerLink="/dien-dan" routerLinkActive="active">Diễn đàn</a> -->
     </nav>
     <div class="header-actions">
       @if (currentUser$ | async; as user) {
-        <a routerLink="/profile" class="btn-register btn-profile" style="background-color: #f1f5f9; color: #0f172a;">👤 {{ user.email?.split('@')?.[0] || 'Tài khoản' }}</a>
-        <button type="button" class="btn-login" (click)="logout()">Đăng xuất</button>
+      <a routerLink="/profile" class="btn-register btn-profile" style="background-color: #f1f5f9; color: #0f172a;">👤 {{
+        user.email?.split('@')?.[0] || 'Tài khoản' }}</a>
+      <button type="button" class="btn-login" (click)="logout()">Đăng xuất</button>
       } @else {
-        <button type="button" class="btn-login" routerLink="/login">Đăng nhập</button>
-        <a routerLink="/register" class="btn-register">🚀 Đăng ký miễn phí</a>
+      <button type="button" class="btn-login" routerLink="/login">Đăng nhập</button>
+      <a routerLink="/register" class="btn-register">🚀 Đăng ký miễn phí</a>
       }
       <div class="hamburger" role="button" tabindex="0" aria-label="Menu">☰</div>
     </div>
   </div>
 </header>
-
-<section class="search-section">
-  <div class="search-wrap">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="Tìm đề thi, chủ đề, từ vựng, ngữ pháp..."
-        aria-label="Tìm kiếm"
-      />
-    </div>
-    <select class="search-filter" aria-label="Lọc tìm kiếm">
-      <option>Tất cả</option>
-      <option>Đề thi</option>
-      <option disabled>Tài liệu</option>
-    </select>
-    <button type="button" class="btn-search">Tìm kiếm</button>
-  </div>
-</section>

@@ -19,16 +19,16 @@ export interface LeaderboardItem {
 export class SignalrService {
   private hubConnection: HubConnection | null = null;
   private isBrowser: boolean;
-  
+
   private leaderboardSubject = new Subject<LeaderboardItem[]>();
   public leaderboard$: Observable<LeaderboardItem[]> = this.leaderboardSubject.asObservable();
-  
+
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
-    
+
     // Automatically start connection if user is already logged in
     this.authService.getCurrentUser().subscribe(user => {
       if (user) {
@@ -88,8 +88,8 @@ export class SignalrService {
     // Listen to global test attempts completions ticker
     this.hubConnection.on('ReceiveAttemptUpdate', (username: string, examTitle: string, score: string) => {
       this.notificationService.show(
-        `🏆 ${username} vừa hoàn thành '${examTitle}' đạt ${score} điểm!`, 
-        'success', 
+        `🏆 ${username} vừa hoàn thành '${examTitle}' đạt ${score} điểm!`,
+        'success',
         6000
       );
     });

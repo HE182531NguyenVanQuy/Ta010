@@ -120,37 +120,37 @@ export class AuthService {
     );
   }
 
-// forgotPassword
-forgotPassword(email: string): Observable<any> {
-  return this.http.post(`${this.apiUrl}/forgot-password`, { email });
-}
+  // forgotPassword
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+  }
 
-resendOtp(email: string): Observable<any> {
-  return this.http.post(`${this.apiUrl}/resend-otp`, { email });
-}
+  resendOtp(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/resend-otp`, { email });
+  }
 
-verifyOtp(email: string, otp: string): Observable<VerifyOtpResponse> {
-  return this.http.post<VerifyOtpResponse>(`${this.apiUrl}/verify-otp`, { email, otp });
-}
+  verifyOtp(email: string, otp: string): Observable<VerifyOtpResponse> {
+    return this.http.post<VerifyOtpResponse>(`${this.apiUrl}/verify-otp`, { email, otp });
+  }
 
-resetPassword(resetToken: string, newPassword: string): Observable<any> {
-  // backend expects resetToken, newPassword, confirmPassword
-  return this.http.post(`${this.apiUrl}/reset-password`, {
-    resetToken,
-    newPassword,
-    confirmPassword: newPassword
-  });
-}
+  resetPassword(resetToken: string, newPassword: string): Observable<any> {
+    // backend expects resetToken, newPassword, confirmPassword
+    return this.http.post(`${this.apiUrl}/reset-password`, {
+      resetToken,
+      newPassword,
+      confirmPassword: newPassword
+    });
+  }
 
- // ===== Profile API =====
- getProfile(): Observable<ProfileResponse> {
-   return this.http.get<ProfileResponse>(`${this.apiUrl}/profile`);
- }
+  // ===== Profile API =====
+  getProfile(): Observable<ProfileResponse> {
+    return this.http.get<ProfileResponse>(`${this.apiUrl}/profile`);
+  }
 
- updateProfile(payload: UpdateProfileRequest): Observable<ProfileResponse> {
-   return this.http.put<ProfileResponse>(`${this.apiUrl}/profile`, payload);
- }
- // ===== end profile =====
+  updateProfile(payload: UpdateProfileRequest): Observable<ProfileResponse> {
+    return this.http.put<ProfileResponse>(`${this.apiUrl}/profile`, payload);
+  }
+  // ===== end profile =====
 
   getAccessToken(): string | null {
     if (!this.isBrowser) return null;

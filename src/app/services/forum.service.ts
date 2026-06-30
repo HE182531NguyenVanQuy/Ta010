@@ -58,14 +58,14 @@ export class ForumService {
   }
 
   getCategoryThreads(
-    categoryId: string, 
-    page: number = 1, 
+    categoryId: string,
+    page: number = 1,
     pageSize: number = 10
   ): Observable<ForumThreadResponse[]> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
-      
+
     return this.http.get<ForumThreadResponse[]>(`${this.apiUrl}/categories/${categoryId}/threads`, { params });
   }
 
@@ -74,9 +74,9 @@ export class ForumService {
   }
 
   createThread(
-    forumCategoryId: string, 
-    title: string, 
-    content: string, 
+    forumCategoryId: string,
+    title: string,
+    content: string,
     tags: string[] = []
   ): Observable<ForumThreadResponse> {
     return this.http.post<ForumThreadResponse>(`${this.apiUrl}/threads`, {
@@ -88,8 +88,8 @@ export class ForumService {
   }
 
   getThreadReplies(
-    threadId: string, 
-    page: number = 1, 
+    threadId: string,
+    page: number = 1,
     pageSize: number = 20
   ): Observable<ForumReplyResponse[]> {
     const params = new HttpParams()
