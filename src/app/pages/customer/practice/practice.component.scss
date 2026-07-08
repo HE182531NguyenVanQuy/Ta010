@@ -1,0 +1,38 @@
+.practice-state {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 320px;
+  text-align: center;
+}
+
+.practice-state-title {
+  color: #1e293b;
+  font-family: var(--font-head);
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.practice-state-sub {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.practice-link {
+  text-decoration: none;
+}
+
+.action-card .practice-link {
+  box-sizing: border-box;
+}
+
+.option {
+  align-items: flex-start;
+}
+
+.q-text,
+.opt-text,
+.expl-text {
+  white-space: pre-wrap;
+}

@@ -82,6 +82,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/customer/document/document.component').then((m) => m.DocumentComponent),
   },
   {
+    path: 'luyen-tap',
+    loadComponent: () => import('./pages/customer/practice/practice.component').then((m) => m.PracticeComponent),
+  },
+  {
     path: 'dien-dan',
     loadComponent: () => import('./pages/customer/forum/forum.component').then((m) => m.ForumComponent),
   },

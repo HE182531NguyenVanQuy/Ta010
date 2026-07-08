@@ -1,0 +1,150 @@
+<div class="page-hero">
+  <div class="hero-blob"></div>
+  <div class="page-hero-inner">
+    <div class="hero-meta-row">
+      <span class="hero-tag"><div class="hero-dot"></div>Luyện tập theo type</span>
+      <span class="hero-tag">Random tối đa 10 câu</span>
+      <span class="hero-tag">Hiện đáp án ngay</span>
+    </div>
+    <h1>{{ type || 'Luyện tập' }}</h1>
+    <p class="hero-desc">
+      Chọn đáp án để xem đúng sai và giải thích ngay lập tức. Mỗi lần làm lại hệ thống sẽ lấy một bộ câu hỏi ngẫu nhiên mới.
+    </p>
+    <div class="hero-info-row">
+      <div class="hi-item">
+        <div class="hi-icon">Q</div>
+        <div>
+          <div class="hi-val">{{ totalQuestions }}</div>
+          <div class="hi-label">Tổng số câu</div>
+        </div>
+      </div>
+      <div class="hi-item">
+        <div class="hi-icon">✓</div>
+        <div>
+          <div class="hi-val">{{ correctCount }}</div>
+          <div class="hi-label">Đúng</div>
+        </div>
+      </div>
+      <div class="hi-item">
+        <div class="hi-icon">↻</div>
+        <div>
+          <div class="hi-val">{{ totalAvailable }}</div>
+          <div class="hi-label">Câu trong DB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="loading" class="exam-main practice-state">
+  <div>
+    <div class="practice-state-title">Đang tải câu hỏi luyện tập...</div>
+    <div class="practice-state-sub">Vui lòng chờ một chút</div>
+  </div>
+</div>
+
+<div *ngIf="!loading && errorMessage" class="exam-main practice-state">
+  <div>
+    <div class="practice-state-title">{{ errorMessage }}</div>
+    <button type="button" class="t-btn t-btn-submit" (click)="loadPractice()">Thử lại</button>
+  </div>
+</div>
+
+<div *ngIf="!loading && !errorMessage && questions.length === 0" class="exam-main practice-state">
+  <div>
+    <div class="practice-state-title">Không có câu hỏi phù hợp</div>
+    <a class="t-btn t-btn-pause practice-link" routerLink="/tai-lieu">Quay lại tài liệu</a>
+  </div>
+</div>
+
+<div class="exam-main" *ngIf="!loading && !errorMessage && questions.length > 0">
+  <div class="exam-wrapper">
+    <div class="section-group" *ngFor="let section of questionSections">
+      <div class="section-header">
+        <h2>
+          {{ section.title }}<br />
+          <span class="section-sub">{{ section.subtitle }}</span>
+        </h2>
+        <span class="section-badge">{{ section.questions.length }} câu</span>
+      </div>
+      <div class="section-body">
+        <div class="question-block" *ngFor="let question of section.questions" [id]="'q' + question.questionId">
+          <div class="q-header">
+            <div class="q-num" [ngClass]="getQNumClass(question.questionId)">
+              {{ question.questionNumber }}
+            </div>
+            <div class="q-text">{{ question.questionText }}</div>
+          </div>
+          <div class="options">
+            <div
+              class="option"
+              *ngFor="let option of getQuestionOptions(question); let optionIndex = index"
+              [ngClass]="getOptionClass(question, getOptionLetter(optionIndex))"
+              (click)="selectOpt(question.questionId, getOptionLetter(optionIndex))"
+            >
+              <div class="opt-label">{{ getOptionLetter(optionIndex) }}</div>
+              <div class="opt-text">{{ option }}</div>
+            </div>
+          </div>
+          <div
+            class="explanation"
+            *ngIf="question.explanation"
+            [class.show]="explVisible[question.questionId]"
+            [ngClass]="getExplanationClass(question)"
+          >
+            <div class="expl-label">Giải thích</div>
+            <div class="expl-text">{{ question.explanation }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="exam-sidebar">
+    <div class="progress-card">
+      <h3>Tiến độ luyện tập</h3>
+      <div class="prog-stats">
+        <div class="prog-stat ps-answered">
+          <div class="prog-num">{{ answeredCount }}</div>
+          <div class="prog-lbl">Đã làm</div>
+        </div>
+        <div class="prog-stat ps-correct">
+          <div class="prog-num">{{ correctCount }}</div>
+          <div class="prog-lbl">Đúng</div>
+        </div>
+        <div class="prog-stat ps-remain">
+          <div class="prog-num">{{ remainCount }}</div>
+          <div class="prog-lbl">Còn lại</div>
+        </div>
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-pct">{{ progressPct }}</div>
+        <div class="prog-bar-bg">
+          <div class="prog-bar-fill" [style.width]="progressWidth"></div>
+        </div>
+      </div>
+      <div class="q-nav-grid">
+        <button
+          *ngFor="let q of questions"
+          class="q-nav-btn"
+          [ngClass]="getNavClass(q)"
+          (click)="scrollToQ(q.questionId)"
+          [title]="'Câu ' + q.questionNumber"
+        >
+          {{ q.questionNumber }}
+        </button>
+      </div>
+      <div class="nav-legend">
+        <div class="legend-item"><div class="legend-dot ld-ok"></div>Đúng</div>
+        <div class="legend-item"><div class="legend-dot ld-err"></div>Sai</div>
+        <div class="legend-item"><div class="legend-dot ld-emp"></div>Chưa làm</div>
+      </div>
+    </div>
+
+    <div class="action-card">
+      <h3>Thao tác</h3>
+      <button type="button" class="act-btn ab-reset" (click)="resetPractice()">↻ Làm lại random</button>
+      <a class="act-btn ab-hint practice-link" routerLink="/tai-lieu">← Chọn box khác</a>
+    </div>
+  </div>
+</div>
