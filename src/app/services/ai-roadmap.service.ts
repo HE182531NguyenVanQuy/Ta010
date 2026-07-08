@@ -7,6 +7,8 @@ export interface StudyRoadmapWeek {
   title: string;
   goal: string;
   tasks: string[];
+  practiceType?: string;
+  practiceUrl?: string;
 }
 
 export interface StudyRoadmap {

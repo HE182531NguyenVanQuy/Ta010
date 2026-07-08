@@ -1,382 +1,200 @@
-<!-- BREADCRUMB -->
 <div class="breadcrumb-bar">
   <div class="breadcrumb-inner">
     🏠 <a routerLink="/">Trang chủ</a> <span>›</span> <span class="bc-cur">Tài liệu</span>
   </div>
 </div>
 
-<!-- PAGE HERO -->
 <div class="page-hero">
-  <div class="hero-blob"></div>
-  <div class="hero-blob2"></div>
   <div class="page-hero-inner fade-up">
     <div class="hero-badge">
       <div class="hero-badge-dot"></div>
-      Kho tài liệu cập nhật liên tục năm 2026
+      Kho câu hỏi luyện tập theo từng dạng bài
     </div>
-    <h1>Kho Tài Liệu <span>Ôn Thi Lớp 10</span><br />Đầy Đủ Nhất</h1>
+    <h1>Chọn <span>Box Câu Hỏi</span><br />Để Luyện Nhanh</h1>
     <p>
-      Tổng hợp đề cương, sách tham khảo, video bài giảng và tài liệu bổ trợ chất lượng cao – tất cả miễn phí – giúp
-      bạn ôn luyện hiệu quả nhất cho kỳ thi 2026.
+      Mỗi box là một nhóm câu hỏi cùng type trong database. Bấm vào box để lấy ngẫu nhiên tối đa 10 câu và luyện ngay.
     </p>
     <div class="hero-stats-row">
       <div>
-        <div class="hs-num">500+</div>
-        <div class="hs-label">Tài liệu có sẵn</div>
+        <div class="hs-num">{{ groups.length }}</div>
+        <div class="hs-label">Box câu hỏi</div>
       </div>
       <div>
-        <div class="hs-num">200+</div>
-        <div class="hs-label">Video bài giảng</div>
+        <div class="hs-num">{{ totalQuestions }}</div>
+        <div class="hs-label">Câu hỏi khả dụng</div>
       </div>
       <div>
-        <div class="hs-num">100%</div>
-        <div class="hs-label">Miễn phí tải về</div>
-      </div>
-      <div>
-        <div class="hs-num">4,000+</div>
-        <div class="hs-label">Lượt tải xuống</div>
+        <div class="hs-num">10</div>
+        <div class="hs-label">Câu tối đa mỗi lượt</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MAIN -->
 <div class="page-main">
   <div class="two-col-layout">
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-panel fade-up">
-        <div class="panel-title">🔍 Tìm tài liệu</div>
+        <div class="panel-title">Tìm kiếm nhanh</div>
         <div class="sidebar-search">
-          <span style="color: var(--sky)">🔍</span>
-          <input type="text" placeholder="Tìm kiếm tài liệu..." />
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            [value]="searchQuery"
+            placeholder="Tìm type câu hỏi..."
+            aria-label="Tìm type câu hỏi"
+            (input)="onSearchInput($event)"
+          />
         </div>
       </div>
 
       <div class="sidebar-panel fade-up d1">
-        <div class="panel-title">📂 Loại tài liệu</div>
+        <div class="panel-title">Type câu hỏi</div>
         <ul class="sfl">
-          <li class="sfl-item active">
-            🗂️ Tất cả <span class="sfl-count">500+</span>
-          </li>
-          <li class="sfl-item">
-            📋 Đề cương ôn tập <span class="sfl-count">80</span>
-          </li>
-          <li class="sfl-item">
-            📖 Sách tham khảo <span class="sfl-count">60</span>
-          </li>
-          <li class="sfl-item">
-            🎬 Video bài giảng <span class="sfl-count">200</span>
-          </li>
-          <li class="sfl-item">
-            📝 Bài tập có đáp án <span class="sfl-count">120</span>
-          </li>
-          <li class="sfl-item">
-            🗺️ Sơ đồ tư duy <span class="sfl-count">40</span>
+          <li
+            *ngFor="let filter of filterOptions"
+            class="sfl-item"
+            [class.active]="activeType === filter.id"
+            (click)="setType(filter.id)"
+            role="button"
+            tabindex="0"
+          >
+            <span>{{ filter.label }}</span>
+            <span class="sfl-count">{{ filter.count }}</span>
           </li>
         </ul>
-      </div>
-
-      <div class="sidebar-panel fade-up d1">
-        <div class="panel-title">🎯 Chủ đề</div>
-        <ul class="sfl">
-          <li class="sfl-item active">
-            Tất cả <span class="sfl-count">500+</span>
-          </li>
-          <li class="sfl-item">
-            Ngữ pháp <span class="sfl-count">150</span>
-          </li>
-          <li class="sfl-item">
-            Từ vựng <span class="sfl-count">90</span>
-          </li>
-          <li class="sfl-item">
-            Đọc hiểu <span class="sfl-count">80</span>
-          </li>
-          <li class="sfl-item">
-            Nghe hiểu <span class="sfl-count">60</span>
-          </li>
-          <li class="sfl-item">
-            Viết <span class="sfl-count">70</span>
-          </li>
-          <li class="sfl-item">
-            Đề thi tổng hợp <span class="sfl-count">50</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-panel fade-up d1">
-        <div class="panel-title">📁 Định dạng file</div>
-        <div class="chip-group">
-          <div class="filter-chip active">Tất cả</div>
-          <div class="filter-chip">PDF</div>
-          <div class="filter-chip">DOCX</div>
-          <div class="filter-chip">PPTX</div>
-          <div class="filter-chip">Video</div>
-        </div>
-      </div>
-
-      <div class="sidebar-panel fade-up d2">
-        <div class="panel-title">🔥 Tài liệu tải nhiều nhất</div>
-        <div>
-          <div class="hot-doc-item" *ngFor="let item of leaderboardItems.slice(0, 5)">
-            <div class="hot-doc-thumb" [style.background]="getThumbGradient(item.emoji)">{{ item.emoji }}</div>
-            <div>
-              <div class="hot-doc-title">{{ item.title }}</div>
-              <div class="hot-doc-meta">📥 {{ item.downloads }} · {{ item.meta }}</div>
-            </div>
-          </div>
-        </div>
       </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
-    <div>
-
-      <!-- FEATURED DOC -->
-      <div class="featured-doc fade-up">
-        <div class="fd-icon">📦</div>
-        <div class="fd-body">
-          <span class="fd-tag">⭐ Tài liệu nổi bật tháng 3/2026</span>
-          <div class="fd-title">Bộ tài liệu ôn thi lớp 10 toàn diện – Ngữ pháp + Từ vựng + Đề thi 2026</div>
-          <div class="fd-desc">
-            Trọn bộ tài liệu được biên soạn bởi đội ngũ giáo viên TaO10 – chuẩn cấu trúc đề thi Hà Nội 2026. Bao gồm
-            đề cương, bài tập và đáp án chi tiết.
-          </div>
-          <div class="fd-meta">
-            <span>📁 ZIP · 450MB</span>
-            <span>📄 12 tài liệu</span>
-            <span>📥 32.6k lượt tải</span>
-            <span>⭐ 4.9/5</span>
-          </div>
+    <div class="document-content">
+      <div *ngIf="!loading && !errorMessage && groups.length > 0" class="stats-banner fade-up">
+        <div class="stat-item">
+          <div class="stat-icon">📦</div>
+          <div class="stat-num">{{ groups.length }}</div>
+          <div class="stat-label">Tổng box</div>
         </div>
-        <div class="fd-actions">
-          <button class="fd-btn-primary">📥 Tải về ngay</button>
-          <button class="fd-btn-ghost">👁 Xem trước</button>
+        <div class="stat-item">
+          <div class="stat-icon">📝</div>
+          <div class="stat-num">{{ filteredGroups.length }}</div>
+          <div class="stat-label">Box đang hiển thị</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">📚</div>
+          <div class="stat-num">{{ visibleQuestionCount }}</div>
+          <div class="stat-label">Câu trong bộ lọc</div>
         </div>
       </div>
 
-      <!-- NOTICE -->
-      <div class="notice-banner fade-up">
-        <div class="notice-banner-icon">🆕</div>
-        <div class="notice-banner-text">
-          <h4>Vừa cập nhật – Bộ đề cương ôn tập học kỳ 2 năm học 2025–2026!</h4>
-          <p>Đề cương mới nhất từ Sở GD&ĐT Hà Nội – chuẩn cấu trúc thi tuyển sinh lớp 10 năm 2026. Tải ngay miễn phí!</p>
-        </div>
-        <button class="notice-banner-btn">Tải về ngay →</button>
-      </div>
-
-      <!-- TAB BAR -->
-      <div class="tab-bar fade-up">
-        <div
-          *ngFor="let tab of tabs"
+      <div *ngIf="filterOptions.length > 1" class="tab-bar fade-up">
+        <button
+          type="button"
           class="tab"
-          [class.active]="activeTab === tab"
-          (click)="setActiveTab(tab)"
+          *ngFor="let tab of filterOptions"
+          [class.active]="activeTab === tab.id"
+          (click)="setTab(tab.id)"
         >
-          {{ tab }}
-        </div>
+          {{ tab.label }}
+        </button>
       </div>
 
-      <!-- TOOLBAR -->
       <div class="toolbar fade-up">
-        <div class="result-count">Hiển thị <span>500+</span> tài liệu</div>
-        <div style="display: flex; align-items: center; gap: 10px">
-          <select #sortSelect class="sort-select" (change)="setSortBy(sortSelect.value)">
-            <option *ngFor="let opt of sortOptions">{{ opt }}</option>
+        <div class="result-count">
+          Hiển thị <span>{{ filteredGroups.length }}</span> / {{ groups.length }} box
+        </div>
+        <div class="toolbar-right">
+          <select class="sort-select" aria-label="Sắp xếp" [value]="activeSort" (change)="onSortChange($event)">
+            <option *ngFor="let option of sortOptions" [value]="option.id">{{ option.label }}</option>
           </select>
-          <div class="view-toggle">
-            <button class="view-btn active">⊞</button>
-            <button class="view-btn">☰</button>
+          <div class="view-toggle" role="group" aria-label="Chế độ hiển thị">
+            <button
+              type="button"
+              class="view-btn"
+              [class.active]="viewMode === 'grid'"
+              [attr.aria-pressed]="viewMode === 'grid'"
+              (click)="setView('grid')"
+              title="Dạng lưới"
+            >
+              <span class="view-btn-icon" aria-hidden="true">⊞</span>
+            </button>
+            <button
+              type="button"
+              class="view-btn"
+              [class.active]="viewMode === 'list'"
+              [attr.aria-pressed]="viewMode === 'list'"
+              (click)="setView('list')"
+              title="Dạng dòng"
+            >
+              <span class="view-btn-icon" aria-hidden="true">☰</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- 4 DOC TYPE CARDS -->
       <div class="section-title-row fade-up">
-        <h2 class="section-title">📂 Danh mục <span>tài liệu</span></h2>
+        <h2 class="section-title">Box <span>luyện tập</span></h2>
+        <button type="button" class="btn-action btn-action--secondary" (click)="loadGroups()" [disabled]="loading">
+          {{ loading ? 'Đang tải...' : 'Tải lại' }}
+        </button>
       </div>
-      <div class="doc-type-grid fade-up">
-        <div *ngFor="let docType of documentTypes" class="doc-type-card" [ngClass]="docType.colorClass">
-          <div class="dtc-icon">{{ docType.icon }}</div>
-          <div class="dtc-name">{{ docType.name }}</div>
-          <div class="dtc-desc">{{ docType.description }}</div>
-          <span class="dtc-count">{{ docType.count }}</span>
+
+      <div *ngIf="loading" class="exam-notice-bar fade-up">
+        <span class="exam-notice-emoji">⏳</span>
+        <div class="exam-notice-text">
+          <div class="exam-notice-title">Đang tải box câu hỏi...</div>
+          <div class="exam-notice-desc">Vui lòng chờ một chút.</div>
         </div>
       </div>
 
-      <!-- ĐỀ CƯƠNG -->
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">📋 Đề cương <span>ôn tập trọng tâm</span></h2>
-        <a href="#" class="view-all">Xem tất cả →</a>
+      <div *ngIf="!loading && errorMessage" class="exam-notice-bar fade-up">
+        <span class="exam-notice-emoji">!</span>
+        <div class="exam-notice-text">
+          <div class="exam-notice-title">{{ errorMessage }}</div>
+          <div class="exam-notice-desc">Hãy thử tải lại trang hoặc quay lại sau.</div>
+        </div>
+        <button type="button" class="btn-action btn-action--primary" (click)="loadGroups()" [disabled]="loading">
+          Thử lại
+        </button>
       </div>
-      <div class="doc-cards fade-up">
-        <div *ngFor="let doc of docCards" class="doc-card">
-          <div class="doc-card-cover" [ngClass]="doc.coverGradient">
+
+      <div *ngIf="!loading && !errorMessage && filteredGroups.length === 0" class="exam-notice-bar fade-up">
+        <span class="exam-notice-emoji">{{ hasActiveFilters ? '🔍' : '📭' }}</span>
+        <div class="exam-notice-text">
+          <div class="exam-notice-title">
+            {{ hasActiveFilters ? 'Không tìm thấy box phù hợp' : 'Chưa có box câu hỏi nào' }}
+          </div>
+          <div class="exam-notice-desc">
+            {{ hasActiveFilters ? 'Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm.' : 'Hiện chưa có câu hỏi để hiển thị.' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="exam-cards fade-up" [class.list-mode]="viewMode === 'list'">
+        <a
+          *ngFor="let group of filteredGroups; let index = index"
+          class="exam-card"
+          [routerLink]="['/luyen-tap']"
+          [queryParams]="{ type: group.type }"
+        >
+          <div class="exam-card-cover" [ngClass]="getCoverClass(index)">
             <div class="cover-pattern"></div>
-            <div class="doc-cover-icon">{{ doc.coverEmoji }}</div>
-            <div class="doc-cover-type">{{ doc.coverType }}</div>
-            <span class="doc-card-tag" [ngClass]="getTagColor(doc.tag)">{{ getTagIcon(doc.tag) }} {{ doc.tag }}</span>
+            <div class="cover-label">{{ getTypeIcon(group.type) }}</div>
+            <span class="exam-card-tag tag-free">{{ group.count }} câu</span>
           </div>
-          <div class="doc-card-body">
-            <div class="doc-card-title">{{ doc.title }}</div>
-            <div class="doc-card-meta">
-              <span>{{ doc.pages }}</span>
-              <span>{{ doc.downloads }}</span>
-              <span>{{ doc.rating }}</span>
+          <div class="exam-card-body">
+            <div class="exam-card-title">{{ group.type }}</div>
+            <div class="exam-card-meta">
+              <span>{{ group.count }} câu trong DB</span>
+              <span>Random tối đa 10 câu</span>
             </div>
-            <div class="doc-card-desc">{{ doc.description }}</div>
-            <div class="doc-card-footer">
-              <span class="doc-file-type" [ngClass]="'ft-' + doc.fileType.toLowerCase()">
-                📄 {{ doc.fileType }}
-              </span>
-              <button class="btn-download">📥 Tải về</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIDEO BÀI GIẢNG -->
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">🎬 Video <span>bài giảng nổi bật</span></h2>
-        <a href="#" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="video-cards fade-up d1">
-        <div *ngFor="let video of videoCards" class="video-card">
-          <div class="video-thumb" [ngClass]="video.coverGradient">
-            <div class="play-btn">▶</div>
-            <span class="video-duration">{{ video.duration }}</span>
-            <span class="doc-card-tag" [ngClass]="getTagColor(video.tag)">
-              {{ getTagIcon(video.tag) }} {{ video.tag }}
-            </span>
-          </div>
-          <div class="video-body">
-            <div class="video-title">{{ video.title }}</div>
-            <div class="video-meta">
-              <span>{{ video.views }}</span>
-              <span>{{ video.rating }}</span>
-              <span>{{ video.date }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SƠ ĐỒ TƯ DUY & TÀI LIỆU THEO CHỦ ĐỀ -->
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">🗺️ Tài liệu theo <span>chủ đề & kỹ năng</span></h2>
-        <a href="#" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="topics-list fade-up d1">
-        <div *ngFor="let topic of topicsList" class="topic-item">
-          <div class="topic-emoji">{{ topic.emoji }}</div>
-          <div>
-            <div class="topic-name">{{ topic.name }}</div>
-            <div class="topic-count">{{ topic.count }}</div>
-          </div>
-          <div class="topic-arrow">›</div>
-        </div>
-      </div>
-
-      <!-- PAGINATION -->
-      <div class="pagination fade-up">
-        <button class="pg-btn">‹</button>
-        <button class="pg-btn active">1</button>
-        <button class="pg-btn">2</button>
-        <button class="pg-btn">3</button>
-        <button class="pg-btn">4</button>
-        <button class="pg-btn">5</button>
-        <span style="font-family: var(--font-head); font-size: 0.82rem; color: var(--gray-400); padding: 0 4px">
-          ...
-        </span>
-        <button class="pg-btn">14</button>
-        <button class="pg-btn">›</button>
-      </div>
-
-      <!-- TWO COLS: BLOG + LEADERBOARD -->
-      <div class="section-title-row fade-up">
-        <h2 class="section-title">📰 Bài viết & <span>Tin tức tài liệu</span></h2>
-        <a href="#" class="view-all">Xem tất cả →</a>
-      </div>
-      <div class="two-cols fade-up">
-        <div>
-          <div *ngFor="let blog of blogCards" class="blog-card">
-            <div class="blog-thumb" [style.background]="getThumbGradient(blog.emoji)">{{ blog.emoji }}</div>
-            <div>
-              <div class="blog-title">{{ blog.title }}</div>
-              <div class="blog-meta">{{ blog.date }} · {{ blog.readTime }} · {{ blog.views }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <!-- TOP DOWNLOADS -->
-          <div class="sidebar-card" style="margin-bottom: 20px">
-            <div class="section-title" style="font-size: 1rem; padding-left: 12px; margin: 0">📥 Top tải xuống tuần</div>
-            <ul class="leaderboard-list">
-              <li *ngFor="let item of leaderboardItems" class="lb-item">
-                <div class="lb-rank" [ngClass]="item.rankClass">{{ getRankEmoji(item.rank) }}</div>
-                <div class="lb-avatar" [style.background]="getAvatarGradient(item.rank)">{{ item.emoji }}</div>
-                <div class="lb-info">
-                  <div class="lb-name">{{ item.title }}</div>
-                  <div class="lb-score">{{ item.meta }}</div>
-                </div>
-                <div class="lb-points" style="font-size: 0.76rem">{{ item.downloads }}</div>
-              </li>
-            </ul>
-            <a href="#" style="display: block; text-align: center; margin-top: 12px; font-family: var(--font-head); font-size: 0.82rem; font-weight: 700; color: var(--sky); text-decoration: none">
-              Xem tất cả tài liệu →
-            </a>
-          </div>
-
-          <!-- UPLOAD CTA -->
-          <div class="sidebar-card">
-            <div class="section-title" style="font-size: 1rem; padding-left: 12px; margin: 0 0 14px">🤝 Đóng góp tài liệu</div>
-            <div style="text-align: center; padding: 8px 0">
-              <div style="font-size: 2.5rem; margin-bottom: 12px">📤</div>
-              <p style="font-size: 0.84rem; color: var(--gray-600); line-height: 1.6; margin-bottom: 16px">
-                Bạn có tài liệu chất lượng muốn chia sẻ với cộng đồng học sinh? Gửi cho TaO10 để giúp đỡ hàng triệu
-                bạn cùng ôn thi!
-              </p>
-              <button
-                style="width: 100%; font-family: var(--font-head); font-weight: 700; font-size: 0.88rem; background: linear-gradient(135deg, var(--sky-deep), var(--sky)); color: #fff; border: none; border-radius: 10px; padding: 12px; cursor: pointer; box-shadow: 0 3px 12px rgba(14, 165, 233, 0.3); transition: all 0.2s"
-                onmouseover="this.style.transform='translateY(-1px)'"
-                onmouseout="this.style.transform=''"
-              >
-                📤 Gửi tài liệu của bạn
-              </button>
-              <p style="font-size: 0.74rem; color: var(--gray-400); margin-top: 10px">
-                Được kiểm duyệt và chia sẻ miễn phí đến cộng đồng
-              </p>
-            </div>
-
-            <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--sky-light)">
-              <div style="font-family: var(--font-head); font-weight: 700; font-size: 0.84rem; color: var(--gray-800); margin-bottom: 10px">
-                📞 Hỗ trợ tải tài liệu
+            <div class="exam-card-footer">
+              <div class="exam-card-difficulty diff-medium">
+                <div class="diff-dot"></div>
+                Luyện nhanh
               </div>
-              <div style="font-size: 0.8rem; color: var(--gray-500); display: flex; flex-direction: column; gap: 6px">
-                <div>✉️ tao10@gmail.com</div>
-                <div>📞 1900-0000 (8:00–22:00)</div>
-                <div>💬 Zalo: TaO10 Official</div>
-              </div>
+              <span class="btn-start">Làm bài →</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- CTA -->
-      <div class="cta-section fade-up">
-        <div style="font-size: 3rem; margin-bottom: 16px">📚</div>
-        <h2>Tải tài liệu <span>hoàn toàn miễn phí!</span></h2>
-        <p>
-          Đăng ký tài khoản để tải không giới hạn 500+ tài liệu chất lượng cao, xem 200+ video bài giảng và nhận thông
-          báo tài liệu mới nhất. Không cần thẻ tín dụng.
-        </p>
-        <div class="cta-btns">
-          <button class="btn-cta-primary">🚀 Đăng ký tải tài liệu miễn phí</button>
-          <button class="btn-cta-outline">📋 Xem tất cả tài liệu</button>
-        </div>
-        <div style="margin-top: 20px; font-size: 0.8rem; color: var(--gray-400)">
-          ✅ Miễn phí mãi mãi &nbsp;·&nbsp; ✅ Không quảng cáo &nbsp;·&nbsp; ✅ 500+ tài liệu
-        </div>
+        </a>
       </div>
     </div>
   </div>

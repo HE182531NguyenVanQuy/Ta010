@@ -5,7 +5,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ProfileResponse, UpdateProfileRequest } from '../../../models/auth.models';
 import { Router, RouterModule } from '@angular/router';
 import { Location } from '@angular/common';
-import { AiRoadmapService, StudyRoadmap } from '../../../services/ai-roadmap.service';
+import { AiRoadmapService, StudyRoadmap, StudyRoadmapWeek } from '../../../services/ai-roadmap.service';
 
 @Component({
   selector: 'app-profile',
@@ -139,6 +139,32 @@ export class ProfileComponent implements OnInit {
 
   private getRoadmapAttemptKey(roadmap: StudyRoadmap): string | null {
     return roadmap.sourceAttemptId || roadmap.sourceSubmittedAt || null;
+  }
+
+  startWeekPractice(week: StudyRoadmapWeek, weekIndex: number): void {
+    const type = week.practiceType || this.inferPracticeType(week);
+    this.router.navigate(['/luyen-tap'], {
+      queryParams: {
+        type,
+        week: weekIndex + 1
+      }
+    });
+  }
+
+  private inferPracticeType(week: StudyRoadmapWeek): string {
+    const text = `${week.title} ${week.goal} ${(week.tasks || []).join(' ')}`.toLowerCase();
+
+    if (text.includes('điền từ') || text.includes('dien tu')) return 'Đọc hiểu - điền từ';
+    if (text.includes('phát âm') || text.includes('phat am')) return 'Phát âm';
+    if (text.includes('trọng âm') || text.includes('trong am')) return 'Trọng âm';
+    if (text.includes('tìm lỗi sai') || text.includes('tim loi sai')) return 'Tìm lỗi sai';
+    if (text.includes('giao tiếp') || text.includes('giao tiep')) return 'Giao tiếp';
+    if (text.includes('đồng nghĩa') || text.includes('dong nghia')) return 'Từ đồng nghĩa';
+    if (text.includes('trái nghĩa') || text.includes('trai nghia')) return 'Từ trái nghĩa';
+    if (text.includes('đọc hiểu') || text.includes('doc hieu')) return 'Đọc hiểu';
+    if (text.includes('viết lại') || text.includes('viet lai')) return 'Viết lại câu (gần nghĩa)';
+
+    return 'Chọn đáp án đúng';
   }
 
   submit(): void {

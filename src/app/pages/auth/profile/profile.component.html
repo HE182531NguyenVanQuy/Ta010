@@ -65,6 +65,10 @@
                   <ul>
                     <li *ngFor="let task of week.tasks">{{ task }}</li>
                   </ul>
+                  <button type="button" class="btn-week-practice" (click)="startWeekPractice(week, i)">
+                    <span class="material-symbols-outlined">play_arrow</span>
+                    <span>Luyện {{ week.practiceType || 'theo tuần' }}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -212,6 +216,10 @@
                 <ul>
                   <li *ngFor="let task of week.tasks">{{ task }}</li>
                 </ul>
+                <button type="button" class="btn-week-practice" (click)="startWeekPractice(week, i)">
+                  <span class="material-symbols-outlined">play_arrow</span>
+                  <span>Luyện {{ week.practiceType || 'theo tuần' }}</span>
+                </button>
               </div>
             </div>
           </div>
