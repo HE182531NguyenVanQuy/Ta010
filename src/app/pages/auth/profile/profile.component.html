@@ -74,7 +74,7 @@
             </div>
 
             <div class="roadmap-actions">
-              <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading">
+              <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading || !canUseRoadmap">
                 <span class="material-symbols-outlined" *ngIf="!roadmapLoading">sync</span>
                 <span>{{ roadmapLoading ? 'Đang cập nhật...' : 'Cập nhật lộ trình' }}</span>
               </button>
@@ -82,7 +82,7 @@
           </ng-container>
 
           <ng-template #addRoadmapTpl>
-            <button type="button" class="btn-add-roadmap" (click)="addRoadmap()" [disabled]="roadmapLoading">
+            <button type="button" class="btn-add-roadmap" (click)="addRoadmap()" [disabled]="roadmapLoading || !canUseRoadmap">
               <span class="material-symbols-outlined" *ngIf="!roadmapLoading">add_task</span>
               <span>{{ roadmapLoading ? 'Đang tạo lộ trình...' : 'Thêm lộ trình' }}</span>
             </button>
@@ -225,7 +225,7 @@
           </div>
 
           <div class="roadmap-actions">
-            <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading">
+            <button type="button" class="btn-update-roadmap" (click)="updateRoadmap()" [disabled]="roadmapLoading || !canUseRoadmap">
               <span class="material-symbols-outlined" *ngIf="!roadmapLoading">sync</span>
               <span>{{ roadmapLoading ? 'Đang cập nhật...' : 'Cập nhật lộ trình' }}</span>
             </button>
@@ -235,7 +235,7 @@
         <ng-template #addRoadmapTplWide>
           <div class="roadmap-empty-row">
             <p>Chưa có lộ trình. AI sẽ dùng attempt hoàn thành gần nhất để phân tích và tạo kế hoạch học.</p>
-            <button type="button" class="btn-add-roadmap" (click)="addRoadmap()" [disabled]="roadmapLoading">
+            <button type="button" class="btn-add-roadmap" (click)="addRoadmap()" [disabled]="roadmapLoading || !canUseRoadmap">
               <span class="material-symbols-outlined" *ngIf="!roadmapLoading">add_task</span>
               <span>{{ roadmapLoading ? 'Đang tạo lộ trình...' : 'Thêm lộ trình' }}</span>
             </button>

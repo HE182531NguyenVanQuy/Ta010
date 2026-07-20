@@ -1192,3 +1192,20 @@ table {
     line-height: 1.3;
   }
 }
+ .btn-export-users {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .7rem 1rem;
+  border: 0;
+  border-radius: .6rem;
+  background: #006194;
+  color: #fff;
+  font: 700 .82rem 'Inter', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,97,148,.2);
+ }
+ .btn-export-users:hover:not(:disabled) { background:#007bb9; }
+ .btn-export-users:disabled { opacity:.55; cursor:wait; }
+ .btn-export-users .material-symbols-outlined { font-size:1.1rem; }

@@ -6,6 +6,7 @@ import { ProfileResponse, UpdateProfileRequest } from '../../../models/auth.mode
 import { Router, RouterModule } from '@angular/router';
 import { Location } from '@angular/common';
 import { AiRoadmapService, StudyRoadmap, StudyRoadmapWeek } from '../../../services/ai-roadmap.service';
+import { PaymentService } from '../../../services/payment.service';
 
 @Component({
   selector: 'app-profile',
@@ -22,6 +23,7 @@ export class ProfileComponent implements OnInit {
   private location = inject(Location);
   private cdr = inject(ChangeDetectorRef);
   private aiRoadmapService = inject(AiRoadmapService);
+  private paymentService = inject(PaymentService);
 
   profile?: ProfileResponse;
   loading = false;
@@ -31,6 +33,7 @@ export class ProfileComponent implements OnInit {
   roadmapMessage = '';
   roadmapError = '';
   studyRoadmap: StudyRoadmap | null = null;
+  canUseRoadmap = false;
   activeTab = signal<'general' | 'security'>('general');
 
   form = this.fb.group({
@@ -44,6 +47,23 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfile();
+    this.loadPackageAccess();
+  }
+
+  private loadPackageAccess(): void {
+    this.paymentService.getMyPackage().subscribe({
+      next: (userPackage) => {
+        this.canUseRoadmap = !!userPackage?.isActive && (userPackage.durationTime ?? 0) >= 90;
+        if (!this.canUseRoadmap) {
+          this.roadmapError = 'Tạo lộ trình và luyện tập yêu cầu gói từ 3 tháng trở lên.';
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.canUseRoadmap = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   setTab(tab: 'general' | 'security') {
@@ -90,6 +110,11 @@ export class ProfileComponent implements OnInit {
     this.roadmapMessage = '';
     this.roadmapError = '';
 
+    if (!this.canUseRoadmap) {
+      this.roadmapError = 'Tạo lộ trình học yêu cầu gói từ 3 tháng trở lên.';
+      return;
+    }
+
     try {
       this.roadmapLoading = true;
       const roadmap = await this.aiRoadmapService.generateRoadmap();
@@ -106,6 +131,10 @@ export class ProfileComponent implements OnInit {
   }
 
   async updateRoadmap(): Promise<void> {
+    if (!this.canUseRoadmap) {
+      this.roadmapError = 'Cập nhật lộ trình học yêu cầu gói từ 3 tháng trở lên.';
+      return;
+    }
     if (!this.studyRoadmap) {
       await this.addRoadmap();
       return;
@@ -142,6 +171,11 @@ export class ProfileComponent implements OnInit {
   }
 
   startWeekPractice(week: StudyRoadmapWeek, weekIndex: number): void {
+    if (!this.canUseRoadmap) {
+      this.roadmapError = 'Luyện tập yêu cầu gói từ 3 tháng trở lên.';
+      this.cdr.markForCheck();
+      return;
+    }
     const type = week.practiceType || this.inferPracticeType(week);
     this.router.navigate(['/luyen-tap'], {
       queryParams: {

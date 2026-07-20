@@ -99,6 +99,10 @@
           <p>Xem thông tin cơ bản, chi tiết hoạt động, phân quyền và khóa/mở khóa tài khoản người dùng.</p>
         </div>
         <div class="header-actions">
+          <button type="button" class="btn-export-users" (click)="exportUsers()" [disabled]="isExporting">
+            <span class="material-symbols-outlined">table_view</span>
+            {{ isExporting ? 'Đang xuất...' : 'Xuất Excel' }}
+          </button>
           <div class="search-box">
             <span class="material-symbols-outlined search-icon">search</span>
             <input

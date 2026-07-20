@@ -21,6 +21,7 @@ export interface UserPackageResponse {
   endDate?: string;
   status: string;
   isActive: boolean;
+  durationTime: number;
 }
 
 export interface CheckoutResponse {

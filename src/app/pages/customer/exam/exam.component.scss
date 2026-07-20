@@ -707,6 +707,25 @@
   align-items: center;
   justify-content: space-between;
 }
+.exam-card-actions { display: flex; align-items: center; gap: 7px; }
+.btn-download-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1.5px solid #bbd8e8;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--sky-deep);
+  font-family: var(--font-head);
+  font-size: .76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-download-word .material-symbols-outlined { font-size: 16px; }
+.btn-download-word:hover:not(:disabled) { background: #e7f5fb; border-color: var(--sky); }
+.btn-download-word:disabled { opacity: .55; cursor: wait; }
 .exam-card-difficulty {
   display: flex;
   align-items: center;

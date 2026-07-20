@@ -1,0 +1,94 @@
+<div class="report-shell">
+  <aside class="sidebar" [class.open]="!isSidebarCollapsed">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+      </div>
+      <div class="brand-text">
+        <h1>TaO10</h1>
+        <p>Management Portal</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a *ngFor="let item of sidebarMenuItems" class="nav-item" [class.active]="isMenuActive(item.route)" (click)="navigate(item.route)">
+        <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+      <div class="nav-separator"></div>
+      <a class="nav-item" (click)="navigate('settings')">
+        <span class="material-symbols-outlined nav-icon">settings</span>
+        <span class="nav-label">Settings</span>
+      </a>
+      <a class="nav-item logout-nav-item" (click)="navigate('logout')">
+        <span class="material-symbols-outlined nav-icon">logout</span>
+        <span class="nav-label">Logout</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><button type="button" class="mobile-toggle" (click)="toggleSidebar()"><span class="material-symbols-outlined">menu</span></button><span>Admin</span><span class="material-symbols-outlined">chevron_right</span><strong>{{ pageTitle }}</strong></div>
+      <button type="button" class="back-btn" (click)="navigate('dashboard')"><span class="material-symbols-outlined">arrow_back</span> Dashboard</button>
+    </header>
+
+    <div class="content">
+      <section class="page-heading">
+        <div><span class="eyebrow">Trung tâm phân tích</span><h1>{{ pageTitle }}</h1><p>{{ activeTab === 'exams' ? 'Theo dõi hiệu suất đề thi, lượt làm và kết quả học viên.' : 'Theo dõi lượt mua, người dùng hoạt động và doanh thu gói dịch vụ.' }}</p></div>
+        <button type="button" class="export-btn" (click)="exportExcel()" [disabled]="!report || exporting"><span class="material-symbols-outlined">table_view</span>{{ exporting ? 'Đang xuất...' : ('Xuất Excel ' + (activeTab === 'exams' ? 'Exam' : 'Package')) }}</button>
+      </section>
+
+      <section class="filter-card">
+        <div class="presets"><button type="button" (click)="setPreset(1)">Tháng này</button><button type="button" (click)="setPreset(3)">3 tháng</button><button type="button" (click)="setPreset(6)">6 tháng</button><button type="button" (click)="setPreset(12)">12 tháng</button></div>
+        <div class="date-filters">
+          <label>Từ ngày<input type="date" [(ngModel)]="fromDate" /></label>
+          <span class="material-symbols-outlined">arrow_forward</span>
+          <label>Đến ngày<input type="date" [(ngModel)]="toDate" /></label>
+          <button type="button" class="apply-btn" (click)="loadReport()" [disabled]="loading"><span class="material-symbols-outlined">filter_alt</span>{{ loading ? 'Đang tải...' : 'Áp dụng' }}</button>
+        </div>
+      </section>
+
+      <div class="error" *ngIf="error"><span class="material-symbols-outlined">error</span>{{ error }}</div>
+      <div class="loading" *ngIf="loading"><span></span><p>Đang tổng hợp dữ liệu báo cáo...</p></div>
+
+      <ng-container *ngIf="report as data">
+        <section class="kpi-grid compact">
+          <article *ngIf="activeTab === 'exams'"><div class="kpi-icon blue"><span class="material-symbols-outlined">quiz</span></div><div><small>Lượt làm bài</small><strong>{{ data.summary.totalAttempts | number }}</strong><span>{{ data.summary.totalExams }} đề thi</span></div></article>
+          <article *ngIf="activeTab === 'exams'"><div class="kpi-icon violet"><span class="material-symbols-outlined">workspace_premium</span></div><div><small>Điểm trung bình</small><strong>{{ data.summary.averageScore | number:'1.1-2' }}<em>/10</em></strong><span>{{ data.summary.passRate }}% đạt ≥ 5 điểm</span></div></article>
+          <article *ngIf="activeTab === 'packages'"><div class="kpi-icon green"><span class="material-symbols-outlined">payments</span></div><div><small>Doanh thu package</small><strong class="currency">{{ formatCurrency(data.summary.packageRevenue) }}</strong><span>{{ data.summary.packagesSold }} lượt mua</span></div></article>
+          <article *ngIf="activeTab === 'packages'"><div class="kpi-icon orange"><span class="material-symbols-outlined">person_check</span></div><div><small>Đang sử dụng gói</small><strong>{{ data.summary.activeSubscribers | number }}</strong><span>{{ data.summary.totalPackages }} package</span></div></article>
+        </section>
+
+        <section class="insight-grid">
+          <article class="insight-card" *ngIf="activeTab === 'exams'">
+            <div class="card-title"><div><span class="eyebrow">Exam performance</span><h2>Đề thi được làm nhiều nhất</h2></div><span class="badge">Top 5</span></div>
+            <div class="bars" *ngIf="data.exams.length; else noExamChart">
+              <div class="bar-row" *ngFor="let exam of data.exams.slice(0, 5); let i = index"><div class="bar-label"><span>{{ exam.title }}</span><strong>{{ exam.attempts }}</strong></div><div class="bar-track"><span [style.width.%]="exam.attempts / maxExamAttempts * 100" [style.opacity]="1 - i * .1"></span></div></div>
+            </div><ng-template #noExamChart><p class="empty">Chưa có lượt làm bài trong kỳ.</p></ng-template>
+          </article>
+          <article class="insight-card" *ngIf="activeTab === 'packages'">
+            <div class="card-title"><div><span class="eyebrow green-text">Package revenue</span><h2>Package theo doanh thu</h2></div><span class="badge green-badge">Top 5</span></div>
+            <div class="bars package-bars" *ngIf="data.packages.length; else noPackageChart">
+              <div class="bar-row" *ngFor="let package of data.packages.slice(0, 5)"><div class="bar-label"><span>{{ package.name }}</span><strong>{{ formatCurrency(package.revenue) }}</strong></div><div class="bar-track"><span [style.width.%]="package.revenue / maxPackageRevenue * 100"></span></div></div>
+            </div><ng-template #noPackageChart><p class="empty">Chưa có dữ liệu package.</p></ng-template>
+          </article>
+        </section>
+
+        <section class="data-card">
+          <div class="data-toolbar">
+            <div class="tabs"><button type="button" [class.active]="activeTab === 'exams'" (click)="selectTab('exams')"><span class="material-symbols-outlined">school</span>Exam <b>{{ data.exams.length }}</b></button><button type="button" [class.active]="activeTab === 'packages'" (click)="selectTab('packages')"><span class="material-symbols-outlined">inventory_2</span>Package <b>{{ data.packages.length }}</b></button></div>
+            <label class="search"><span class="material-symbols-outlined">search</span><input [(ngModel)]="searchTerm" [placeholder]="activeTab === 'exams' ? 'Tìm đề thi...' : 'Tìm package...'" /></label>
+          </div>
+          <div class="table-wrap" *ngIf="activeTab === 'exams'">
+            <table><thead><tr><th>Đề thi</th><th>Lượt làm</th><th>Hoàn thành</th><th>Học viên</th><th>Điểm TB</th><th>Tỷ lệ đạt</th></tr></thead><tbody><tr *ngFor="let exam of filteredExams"><td><div class="item-name"><span class="material-symbols-outlined">description</span><strong>{{ exam.title }}</strong></div></td><td>{{ exam.attempts }}</td><td>{{ exam.completedAttempts }}</td><td>{{ exam.uniqueStudents }}</td><td><strong>{{ exam.averageScore | number:'1.1-2' }}/10</strong></td><td><div class="rate"><span><i [style.width.%]="exam.passRate"></i></span><strong>{{ exam.passRate }}%</strong></div></td></tr></tbody></table>
+            <p class="empty" *ngIf="!filteredExams.length">Không tìm thấy đề thi phù hợp.</p>
+          </div>
+          <div class="table-wrap" *ngIf="activeTab === 'packages'">
+            <table><thead><tr><th>Package</th><th>Giá bán</th><th>Lượt mua</th><th>Đang hoạt động</th><th>Số đề</th><th>Doanh thu</th></tr></thead><tbody><tr *ngFor="let package of filteredPackages"><td><div class="item-name package"><span class="material-symbols-outlined">inventory_2</span><strong>{{ package.name }}</strong></div></td><td>{{ formatCurrency(package.price) }}</td><td>{{ package.purchases }}</td><td><span class="active-pill">{{ package.activeSubscribers }} active</span></td><td>{{ package.examCount }}</td><td><strong>{{ formatCurrency(package.revenue) }}</strong></td></tr></tbody></table>
+            <p class="empty" *ngIf="!filteredPackages.length">Không tìm thấy package phù hợp.</p>
+          </div>
+        </section>
+      </ng-container>
+    </div>
+  </main>
+</div>

@@ -54,4 +54,10 @@ export class UserAdminService {
   async updateUserRoleAsync(id: string, role: string): Promise<ApiResponse<boolean>> {
     return await firstValueFrom(this.updateUserRole(id, role));
   }
+
+  async exportUsersExcelAsync(search?: string): Promise<Blob> {
+    let params = new HttpParams();
+    if (search) params = params.set('search', search);
+    return await firstValueFrom(this.http.get(`${this.apiUrl}/export`, { params, responseType: 'blob' }));
+  }
 }
