@@ -38,7 +38,6 @@ export class UserAdminComponent implements OnInit {
     { label: 'Dashboard', icon: 'dashboard', route: 'dashboard', active: false },
     { label: 'Users', icon: 'group', route: 'users', active: true },
     { label: 'Packages', icon: 'inventory_2', route: 'packages', active: false },
-    { label: 'Payments', icon: 'payments', route: 'payments', active: false },
     { label: 'Exams', icon: 'school', route: 'exams', active: false },
   ];
 
@@ -49,6 +48,7 @@ export class UserAdminComponent implements OnInit {
   pageSize = 5;
   searchQuery = '';
   isLoading = false;
+  isExporting = false;
 
   // Detail view states
   selectedUser: UserDetailDto | null = null;
@@ -170,6 +170,28 @@ export class UserAdminComponent implements OnInit {
     } catch (err: any) {
       console.error('Error loading user detail', err);
       this.showToast(err.error?.message || 'Không thể lấy thông tin chi tiết người dùng', 'error');
+    }
+  }
+
+  async exportUsers(): Promise<void> {
+    if (this.isExporting) return;
+    this.isExporting = true;
+    this.cdr.markForCheck();
+    try {
+      const blob = await this.userAdminService.exportUsersExcelAsync(this.searchQuery);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `danh-sach-users-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      this.showToast('Đã xuất danh sách người dùng.', 'success');
+    } catch (error) {
+      console.error('Error exporting users', error);
+      this.showToast('Không thể xuất file Excel.', 'error');
+    } finally {
+      this.isExporting = false;
+      this.cdr.markForCheck();
     }
   }
 

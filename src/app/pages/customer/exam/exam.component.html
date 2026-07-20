@@ -350,7 +350,13 @@
                 <div class="diff-dot"></div>
                 {{ exam.level }}
               </div>
-              <button type="button" class="btn-start" (click)="onStartExam(exam)">{{ exam.action }}</button>
+              <div class="exam-card-actions">
+                <button type="button" class="btn-download-word" (click)="downloadExamWord(exam)" [disabled]="downloadingExamId !== null || !canDownloadWord" [title]="canDownloadWord ? 'Tải đề Word' : 'Yêu cầu gói từ 6 tháng trở lên'">
+                  <span class="material-symbols-outlined">download</span>
+                  {{ downloadingExamId === exam.examId ? 'Đang tải...' : 'Word' }}
+                </button>
+                <button type="button" class="btn-start" (click)="onStartExam(exam)">{{ exam.action }}</button>
+              </div>
             </div>
           </div>
         </div>

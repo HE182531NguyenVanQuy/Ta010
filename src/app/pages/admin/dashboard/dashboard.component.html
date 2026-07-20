@@ -89,9 +89,9 @@
           <h2>Dashboard</h2>
           <p>Real-time performance metrics and institutional health metrics.</p>
         </div>
-        <button class="btn-export" (click)="exportReport()">
+        <button class="btn-export" (click)="exportReport()" [disabled]="isExporting">
           <span class="material-symbols-outlined" style="font-size: 1.25rem;">download</span>
-          Export Report
+          {{ isExporting ? 'Exporting...' : 'Export Excel' }}
         </button>
       </div>
 

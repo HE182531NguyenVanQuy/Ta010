@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { PaymentService } from '../../../services/payment.service';
 import {
   QuestionCatalogItem,
   QuestionCatalogService,
@@ -34,13 +35,34 @@ export class PracticeComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private questionCatalogService: QuestionCatalogService,
+    private paymentService: PaymentService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       this.type = params.get('type') ?? '';
-      this.loadPractice();
+      this.checkAccessAndLoad();
+    });
+  }
+
+  private checkAccessAndLoad(): void {
+    this.loading = true;
+    this.paymentService.getMyPackage().subscribe({
+      next: (userPackage) => {
+        if (!userPackage?.isActive || (userPackage.durationTime ?? 0) < 90) {
+          this.loading = false;
+          this.errorMessage = 'Luyện tập yêu cầu gói từ 3 tháng trở lên.';
+          this.cdr.markForCheck();
+          return;
+        }
+        this.loadPractice();
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Bạn cần đăng nhập và sở hữu gói từ 3 tháng trở lên để luyện tập.';
+        this.cdr.markForCheck();
+      }
     });
   }
 

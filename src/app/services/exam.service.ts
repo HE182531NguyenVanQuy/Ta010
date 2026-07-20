@@ -242,6 +242,15 @@ export class ExamService {
     }
   }
 
+  async downloadExamWord(examId: string): Promise<Blob> {
+    const response = await this.fetchWithRetry(
+      `${API_BASE}/exams/${encodeURIComponent(examId)}/word`,
+      { method: 'GET', headers: this.getAuthHeaders() }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return response.blob();
+  }
+
   getImportPackagesFromCode(code: ExamPackageCode): ExamImportPackage[] {
     const startIndex = ExamService.PACKAGE_IMPORT_CHAIN.findIndex(pkg => pkg.code === code);
     if (startIndex < 0) {

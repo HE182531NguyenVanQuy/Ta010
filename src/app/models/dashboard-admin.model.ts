@@ -35,3 +35,40 @@ export interface PackageStatDto {
   users: number;
   price: number;
 }
+
+export interface ReportSummaryDto {
+  totalExams: number;
+  totalAttempts: number;
+  averageScore: number;
+  passRate: number;
+  totalPackages: number;
+  packagesSold: number;
+  packageRevenue: number;
+  activeSubscribers: number;
+}
+
+export interface ExamReportDto {
+  examId: string;
+  title: string;
+  attempts: number;
+  completedAttempts: number;
+  uniqueStudents: number;
+  averageScore: number;
+  passRate: number;
+}
+
+export interface PackageReportDto {
+  packageId: string;
+  name: string;
+  price: number;
+  purchases: number;
+  activeSubscribers: number;
+  revenue: number;
+  examCount: number;
+}
+
+export interface AdminReportDto {
+  summary: ReportSummaryDto;
+  exams: ExamReportDto[];
+  packages: PackageReportDto[];
+}

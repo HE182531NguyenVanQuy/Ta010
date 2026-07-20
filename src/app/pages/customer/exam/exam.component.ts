@@ -112,6 +112,11 @@ export class ExamComponent implements OnInit, OnDestroy {
   packagesList: PackageResponse[] = [];
 
   private catalogExams: Exam[] = [];
+  downloadingExamId: string | null = null;
+
+  get canDownloadWord(): boolean {
+    return this.hasActivePackage && (this.activeUserPkg?.durationTime ?? 0) >= 180;
+  }
   private subscriptions = new Subscription();
 
   constructor(
@@ -884,6 +889,32 @@ export class ExamComponent implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate(['/lam-bai'], { queryParams: { examId: exam.examId } });
+  }
+
+  async downloadExamWord(exam: ExamCard): Promise<void> {
+    if (!this.hasActivePackage || (this.activeUserPkg?.durationTime ?? 0) < 180) {
+      this.notificationService.show('Tải đề Word yêu cầu gói từ 6 tháng trở lên.', 'info');
+      return;
+    }
+    if (this.downloadingExamId) return;
+
+    this.downloadingExamId = exam.examId;
+    this.cdr.markForCheck();
+    try {
+      const blob = await this.examService.downloadExamWord(exam.examId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${exam.title.replace(/[\\/:*?"<>|]/g, '-').trim() || 'de-thi'}.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading exam Word file:', error);
+      this.notificationService.show('Không tải được file Word. Vui lòng thử lại.', 'error');
+    } finally {
+      this.downloadingExamId = null;
+      this.cdr.markForCheck();
+    }
   }
 
   getPackageFeatures(name: string): string[] {

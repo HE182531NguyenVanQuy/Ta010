@@ -7,7 +7,8 @@ import {
   DashboardStatsDto,
   TransactionPagedResponse,
   RevenueDataDto,
-  PackageStatDto
+  PackageStatDto,
+  AdminReportDto
 } from '../models/dashboard-admin.model';
 
 @Injectable({
@@ -56,5 +57,31 @@ export class DashboardAdminService {
 
   async getPackageDistributionAsync(): Promise<ApiResponse<PackageStatDto[]>> {
     return await firstValueFrom(this.getPackageDistribution());
+  }
+
+  getReports(from?: string, to?: string): Observable<ApiResponse<AdminReportDto>> {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<ApiResponse<AdminReportDto>>(`${this.apiUrl}/reports`, { params });
+  }
+
+  async getReportsAsync(from?: string, to?: string): Promise<ApiResponse<AdminReportDto>> {
+    return await firstValueFrom(this.getReports(from, to));
+  }
+
+  exportReportExcel(type: 'exams' | 'packages', from?: string, to?: string): Observable<Blob> {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get(`${this.apiUrl}/reports/${type}/export`, { params, responseType: 'blob' });
+  }
+
+  async exportReportExcelAsync(type: 'exams' | 'packages', from?: string, to?: string): Promise<Blob> {
+    return await firstValueFrom(this.exportReportExcel(type, from, to));
+  }
+
+  async exportDashboardExcelAsync(): Promise<Blob> {
+    return await firstValueFrom(this.http.get(`${this.apiUrl}/export`, { responseType: 'blob' }));
   }
 }

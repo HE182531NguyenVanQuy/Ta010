@@ -63,6 +63,7 @@ export class DashboardComponent implements OnInit {
   revenueData: RevenueDataDto[] = [];
   activeRevenueTab: 'weekly' | 'monthly' | 'yearly' = 'monthly';
   revenueChart: any;
+  isExporting = false;
 
   // Still keeping mock for engagements as it's not in the scope of backend requirements
   courseEngagements: Engagement[] = [
@@ -77,7 +78,6 @@ export class DashboardComponent implements OnInit {
     { label: 'Dashboard', icon: 'dashboard', route: 'dashboard', active: true },
     { label: 'Users', icon: 'group', route: 'users', active: false },
     { label: 'Packages', icon: 'inventory_2', route: 'packages', active: false },
-    { label: 'Payments', icon: 'payments', route: 'payments', active: false },
     { label: 'Exams', icon: 'school', route: 'exams', active: false },
   ];
 
@@ -352,8 +352,25 @@ export class DashboardComponent implements OnInit {
     this.navigateTo('payments');
   }
 
-  exportReport(): void {
-    alert('📊 Báo cáo đã được xuất thành công!');
+  async exportReport(): Promise<void> {
+    if (this.isExporting) return;
+    this.isExporting = true;
+    this.cdr.markForCheck();
+    try {
+      const blob = await this.dashboardService.exportDashboardExcelAsync();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `bao-cao-dashboard-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting dashboard report', error);
+      alert('Không thể xuất báo cáo Excel. Vui lòng thử lại.');
+    } finally {
+      this.isExporting = false;
+      this.cdr.markForCheck();
+    }
   }
 
   logout(): void {
